@@ -87,7 +87,3 @@ bower_components/
 dojo/static/*
 !dojo/static/dojo/*
 
-
-ansible/vars.yml
-
-ansible/roles/webserver/tasks/app.yml
