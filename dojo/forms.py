@@ -425,6 +425,8 @@ class EngForm2(forms.ModelForm):
                                      "this engagement. Without a name the target " +
                                      "start date will be used in listings.")
     product = forms.ModelChoiceField(queryset=Product.objects.all())
+    product_m2m = forms.ModelMultipleChoiceField(Product.objects.all(), required=False, label='Other products - M2M',
+                                               widget=MultipleSelectWithPopPlusMinus(attrs={'size': '11'}))
     target_start = forms.DateField(widget=forms.TextInput(
         attrs={'class': 'datepicker'}))
     target_end = forms.DateField(widget=forms.TextInput(
@@ -484,6 +486,7 @@ class DeleteTestForm(forms.ModelForm):
 
 class AddFindingForm(forms.ModelForm):
     title = forms.CharField(max_length=1000)
+    product = forms.ModelChoiceField(queryset=Product.objects.all())# maybe should filter queryset by products that are in engagement scope
     date = forms.DateField(required=True,
                            widget=forms.TextInput(attrs={'class':
                                                              'datepicker'}))
@@ -524,6 +527,7 @@ class AddFindingForm(forms.ModelForm):
 
 class PromoteFindingForm(forms.ModelForm):
     title = forms.CharField(max_length=1000)
+    product = forms.ModelChoiceField(queryset=Product.objects.all())# maybe should filter queryset by products that are in engagement scope
     date = forms.DateField(required=True,
                            widget=forms.TextInput(attrs={'class':
                                                              'datepicker'}))
@@ -551,6 +555,7 @@ class PromoteFindingForm(forms.ModelForm):
 
 class FindingForm(forms.ModelForm):
     title = forms.CharField(max_length=1000)
+    product = forms.ModelChoiceField(queryset=Product.objects.all())# maybe should filter queryset by products that are in engagement scope
     date = forms.DateField(required=True,
                            widget=forms.TextInput(attrs={'class':
                                                              'datepicker'}))

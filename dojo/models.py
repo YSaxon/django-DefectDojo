@@ -61,7 +61,7 @@ class Product_Type(models.Model):
                                       false_p=False,
                                       duplicate=False,
                                       out_of_scope=False,
-                                      test__engagement__product__prod_type=self).filter(Q(severity="Critical") |
+                                      product__prod_type=self).filter(Q(severity="Critical") |
                                                                                         Q(severity="High") |
                                                                                         Q(severity="Medium") |
                                                                                         Q(severity="Low")).count()
@@ -114,6 +114,7 @@ class Product(models.Model):
     updated = models.DateTimeField(editable=False, null=True, blank=True)
     tid = models.IntegerField(default=0, editable=False)
     authorized_users = models.ManyToManyField(User, blank=True)
+    findings = models.ManyToManyField(Finding)
 
     def __unicode__(self):
         return self.name
@@ -128,11 +129,11 @@ class Product(models.Model):
                                       false_p=False,
                                       duplicate=False,
                                       out_of_scope=False,
-                                      test__engagement__product=self).count()
+                                      product=self).count()
 
     @property
     def endpoint_count(self):
-        endpoints = Endpoint.objects.filter(finding__test__engagement__product=self,
+        endpoints = Endpoint.objects.filter(finding__product=self,
                                             finding__active=True,
                                             finding__verified=True,
                                             finding__mitigated__isnull=True)
@@ -157,7 +158,7 @@ class Product(models.Model):
         if start_date is None or end_date is None:
             return {}
         else:
-            critical = Finding.objects.filter(test__engagement__product=self,
+            critical = Finding.objects.filter(product=self,
                                               mitigated__isnull=True,
                                               verified=True,
                                               false_p=False,
@@ -166,7 +167,7 @@ class Product(models.Model):
                                               severity="Critical",
                                               date__range=[start_date,
                                                            end_date]).count()
-            high = Finding.objects.filter(test__engagement__product=self,
+            high = Finding.objects.filter(product=self,
                                           mitigated__isnull=True,
                                           verified=True,
                                           false_p=False,
@@ -175,7 +176,7 @@ class Product(models.Model):
                                           severity="High",
                                           date__range=[start_date,
                                                        end_date]).count()
-            medium = Finding.objects.filter(test__engagement__product=self,
+            medium = Finding.objects.filter(product=self,
                                             mitigated__isnull=True,
                                             verified=True,
                                             false_p=False,
@@ -184,7 +185,7 @@ class Product(models.Model):
                                             severity="Medium",
                                             date__range=[start_date,
                                                          end_date]).count()
-            low = Finding.objects.filter(test__engagement__product=self,
+            low = Finding.objects.filter(product=self,
                                          mitigated__isnull=True,
                                          verified=True,
                                          false_p=False,
@@ -283,6 +284,7 @@ class Engagement(models.Model):
     reason = models.CharField(max_length=2000, null=True, blank=True)
     report_type = models.ForeignKey(Report_Type, null=True, blank=True)
     product = models.ForeignKey(Product)
+    product_m2m=models.ManyToManyField(Product)
     updated = models.DateTimeField(editable=False, null=True, blank=True)
     active = models.BooleanField(default=True, editable=False)
     test_strategy = models.URLField(editable=True, blank=True, null=True)
@@ -484,7 +486,8 @@ class Finding(models.Model):
     unsaved_request = None
     unsaved_response = None
     references = models.TextField(null=True, blank=True, db_column="refs")
-    test = models.ForeignKey(Test, editable=False)
+    test = models.ManyToManyField(Test, editable=True)
+    product = models.ForeignKey(Product, editable=True)
     # TODO: Will be deprecated soon
     is_template = models.BooleanField(default=False)
     active = models.BooleanField(default=True)
