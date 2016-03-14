@@ -271,7 +271,7 @@ class OpenFindingFilter(DojoFilter):
     severity = MultipleChoiceFilter(choices=[])
     test__test_type = ModelMultipleChoiceFilter(
         queryset=Test_Type.objects.all())
-    test__engagement__product = ModelMultipleChoiceFilter(
+    product = ModelMultipleChoiceFilter(
         queryset=Product.objects.all(),
         label="Product")
 
@@ -285,8 +285,8 @@ class OpenFindingFilter(DojoFilter):
                     ('-last_reviewed', 'Review Date Desc'),
                     ('title', 'Finding Name Asc'),
                     ('-title', 'Finding Name Desc'),
-                    ('test__engagement__product__name', 'Product Name Asc'),
-                    ('-test__engagement__product__name', 'Product Name Desc'))
+                    ('product__name', 'Product Name Asc'),
+                    ('-product__name', 'Product Name Desc'))
         exclude = ['url', 'description', 'mitigation', 'impact',
                    'endpoint', 'references', 'test', 'is_template',
                    'active', 'verified', 'out_of_scope', 'false_p',
@@ -310,7 +310,7 @@ class OpenFindingFilter(DojoFilter):
                     if finding.severity not in sevs)
         self.form.fields['severity'].choices = sevs.items()
         if self.user is not None and not self.user.is_staff:
-            self.form.fields['test__engagement__product'].queryset = Product.objects.filter(
+            self.form.fields['product'].queryset = Product.objects.filter(
                 authorized_users__in=[self.user])
             self.form.fields['endpoints'].queryset = Endpoint.objects.filter(
                 product__authorized_users__in=[self.user]).distinct()
@@ -319,7 +319,7 @@ class OpenFindingFilter(DojoFilter):
 class OpenFingingSuperFilter(OpenFindingFilter):
     reporter = ModelMultipleChoiceFilter(
         queryset=Dojo_User.objects.all())
-    test__engagement__product__prod_type = ModelMultipleChoiceFilter(
+    product__prod_type = ModelMultipleChoiceFilter(
         queryset=Product_Type.objects.all().order_by('name'),
         label="Product Type")
 
@@ -331,10 +331,10 @@ class ClosedFindingFilter(DojoFilter):
     severity = MultipleChoiceFilter(choices=[])
     test__test_type = ModelMultipleChoiceFilter(
         queryset=Test_Type.objects.all())
-    test__engagement__product = ModelMultipleChoiceFilter(
+    product = ModelMultipleChoiceFilter(
         queryset=Product.objects.all(),
         label="Product")
-    test__engagement__product__prod_type = ModelMultipleChoiceFilter(
+    product__prod_type = ModelMultipleChoiceFilter(
         queryset=Product_Type.objects.all(),
         label="Product Type")
 
@@ -348,8 +348,8 @@ class ClosedFindingFilter(DojoFilter):
                     ('-mitigated', 'Mitigated Date Desc'),
                     ('title', 'Finding Name'),
                     ('-title', 'Finding Name Desc'),
-                    ('test__engagement__product__name', 'Product Name'),
-                    ('-test__engagement__product__name', 'Product Name Desc'))
+                    ('product__name', 'Product Name'),
+                    ('-product__name', 'Product Name Desc'))
         exclude = ['url', 'description', 'mitigation', 'impact',
                    'endpoint', 'references', 'test', 'is_template',
                    'active', 'verified', 'out_of_scope', 'false_p',
@@ -385,10 +385,10 @@ class AcceptedFindingFilter(DojoFilter):
     severity = MultipleChoiceFilter(choices=[])
     test__test_type = ModelMultipleChoiceFilter(
         queryset=Test_Type.objects.all())
-    test__engagement__product = ModelMultipleChoiceFilter(
+    product = ModelMultipleChoiceFilter(
         queryset=Product.objects.all(),
         label="Product")
-    test__engagement__product__prod_type = ModelMultipleChoiceFilter(
+    product__prod_type = ModelMultipleChoiceFilter(
         queryset=Product_Type.objects.all(),
         label="Product Type")
 
@@ -404,8 +404,8 @@ class AcceptedFindingFilter(DojoFilter):
                      'Acceptance Date Desc'),
                     ('title', 'Finding Name'),
                     ('-title', 'Finding Name Desc'),
-                    ('test__engagement__product__name', 'Product Name'),
-                    ('-test__engagement__product__name', 'Product Name Dec'))
+                    ('product__name', 'Product Name'),
+                    ('-product__name', 'Product Name Dec'))
         fields = ['title', 'test__engagement__risk_acceptance__created']
         exclude = ['url', 'description', 'mitigation', 'impact',
                    'endpoint', 'references', 'test', 'is_template',
@@ -565,7 +565,7 @@ class FindingStatusFilter(ChoiceFilter):
 
 class MetricsFindingFilter(FilterSet):
     date = MetricsDateRangeFilter()
-    test__engagement__product__prod_type = ModelMultipleChoiceFilter(
+    product__prod_type = ModelMultipleChoiceFilter(
         queryset=Product_Type.objects.all().order_by('name'),
         label="Product Type")
     severity = MultipleChoiceFilter(choices=[])
@@ -634,7 +634,7 @@ class ReportFindingFilter(DojoFilter):
 
 
 class ReportAuthedFindingFilter(DojoFilter):
-    test__engagement__product = ModelMultipleChoiceFilter(queryset=Product.objects.all(), label="Product")
+    product = ModelMultipleChoiceFilter(queryset=Product.objects.all(), label="Product")
     severity = MultipleChoiceFilter(choices=SEVERITY_CHOICES)
     active = ReportBooleanFilter()
     mitigated = MitigatedDateRangeFilter()
@@ -649,7 +649,7 @@ class ReportAuthedFindingFilter(DojoFilter):
             self.user = kwargs.pop('user')
         super(ReportAuthedFindingFilter, self).__init__(*args, **kwargs)
         if not self.user.is_staff:
-            self.form.fields['test__engagement__product'].queryset = Product.objects.filter(
+            self.form.fields['product'].queryset = Product.objects.filter(
                 authorized_users__in=[self.user])
 
     class Meta:

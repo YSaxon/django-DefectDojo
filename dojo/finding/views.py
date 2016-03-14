@@ -47,7 +47,7 @@ def open_findings(request):
     if request.user.is_staff:
         findings = OpenFingingSuperFilter(request.GET, queryset=findings, user=request.user)
     else:
-        findings = findings.filter(test__engagement__product__authorized_users__in=[request.user])
+        findings = findings.filter(product__authorized_users__in=[request.user])
         findings = OpenFindingFilter(request.GET, queryset=findings, user=request.user)
 
     title_words = [word
@@ -58,8 +58,8 @@ def open_findings(request):
     paged_findings = get_page_items(request, findings, 25)
 
     product_type = None
-    if 'test__engagement__product__prod_type' in request.GET:
-        p = request.GET.getlist('test__engagement__product__prod_type', [])
+    if 'product__prod_type' in request.GET:
+        p = request.GET.getlist('product__prod_type', [])
         if len(p) == 1:
             product_type = get_object_or_404(Product_Type, id=p[0])
 
