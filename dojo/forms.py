@@ -209,7 +209,7 @@ class Product_TypeProductForm(forms.ModelForm):
 
 
 class ImportScanForm(forms.Form):
-    SCAN_TYPE_CHOICES = (("Burp Scan", "Burp Scan"), ("Nessus Scan", "Nessus Scan"), ("Nexpose Scan", "Nexpose Scan"),
+    SCAN_TYPE_CHOICES = (("Burp ScanX", "Burp ScanX"), ("Nessus Scan", "Nessus Scan"), ("Nexpose Scan", "Nexpose Scan"),
                          ("Veracode Scan", "Veracode Scan"), ("Checkmarx Scan", "Checkmarx Scan"), ("ZAP Scan", "ZAP Scan"))
     scan_date = forms.DateTimeField(
         required=True,
