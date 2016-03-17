@@ -66,6 +66,7 @@ class ZapXmlParser(object):
                     references += ref + "\n"
 
                 find = Finding(title=item.name,
+                               product=test.engagement.product,
                                cwe=item.cwe,
                                description=item.desc,
                                test=test,

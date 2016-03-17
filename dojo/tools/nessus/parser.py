@@ -105,6 +105,7 @@ class NessusCSVParser(object):
                         dat['description'] = dat['description'] + \
                                              dat['plugin_output']
                     find = Finding(title=dat['title'],
+                                   product=test.engagement.product,
                                    test=test,
                                    active=False,
                                    verified=False, description=dat['description'],
@@ -190,6 +191,7 @@ class NessusXMLParser(object):
                             find.description += plugin_output
                     else:
                         find = Finding(title=title,
+                                       product=test.engagement.product,
                                        test=test,
                                        active=False,
                                        verified=False,

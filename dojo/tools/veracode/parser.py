@@ -60,6 +60,7 @@ class VeracodeXMLParser(object):
                             find_date = test.target_start
 
                         find = Finding(title=flaw.attrib['categoryname'],
+                                       product=test.engagement.product,
                                        cwe=int(flaw.attrib['cweid']),
                                        test=test,
                                        active=False,
