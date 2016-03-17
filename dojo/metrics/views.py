@@ -226,25 +226,25 @@ def metrics(request, mtype):
         in_period_counts[finding.severity] += 1
         in_period_counts['Total'] += 1
 
-        if finding.test.engagement.product.name not in in_period_details:
-            in_period_details[finding.test.engagement.product.name] = {
-                'path': reverse('view_product_findings', args=(finding.test.engagement.product.id,)),
+        if finding.product.name not in in_period_details:
+            in_period_details[finding.product.name] = {
+                'path': reverse('view_product_findings', args=(finding.product.id,)),
                 'Critical': 0, 'High': 0, 'Medium': 0, 'Low': 0, 'Info': 0, 'Total': 0}
         in_period_details[
-            finding.test.engagement.product.name
+            finding.product.name
         ][finding.severity] += 1
-        in_period_details[finding.test.engagement.product.name]['Total'] += 1
+        in_period_details[finding.product.name]['Total'] += 1
 
     for finding in accepted_findings:
-        if finding.test.engagement.product.name not in accepted_in_period_details:
-            accepted_in_period_details[finding.test.engagement.product.name] = {
+        if finding.product.name not in accepted_in_period_details:
+            accepted_in_period_details[finding.product.name] = {
                 'path': reverse('accepted_findings') + '?product=' + str(
-                    finding.test.engagement.product.id),
+                    finding.product.id),
                 'Critical': 0, 'High': 0, 'Medium': 0, 'Low': 0, 'Info': 0, 'Total': 0}
         accepted_in_period_details[
-            finding.test.engagement.product.name
+            finding.product.name
         ][finding.severity] += 1
-        accepted_in_period_details[finding.test.engagement.product.name]['Total'] += 1
+        accepted_in_period_details[finding.product.name]['Total'] += 1
 
     for f in findings_closed:
         closed_in_period_counts[f.severity] += 1

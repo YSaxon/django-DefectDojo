@@ -310,8 +310,8 @@
                         {% else %}<p>{% endif %}{{ finding.numerical_severity }}</p></td>
                         <td>{{ finding.age }}</td>
                         <td><a
-                                href="{% url 'view_product' finding.test.engagement.product.id %}"
-                                title="{{ finding.test.engagement.product }}">{{ finding.test.engagement.product }}</a>
+                                href="{% url 'view_product' finding.product.id %}"
+                                title="{{ finding.product }}">{{ finding.product }}</a>
                         </td>
                     </tr>
                 {% endfor %}

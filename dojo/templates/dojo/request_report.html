@@ -86,7 +86,7 @@
                                 <td>{% if finding.severity == "Critical" or finding.severity == "High" %}
                                     <p class="text-error">
                                 {% else %}<p>{% endif %}{{ finding.severity }}</p></td>
-                                <td>{{ finding.test.engagement.product }}</td>
+                                <td>{{ finding.product }}</td>
                             </tr>
                         {% endfor %}
                         </tbody>

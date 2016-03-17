@@ -249,10 +249,10 @@
                             </tr>
                             {% for finding in findings %}
                                 <tr>
-                                    <td>{{ finding.test.engagement.product.prod_type.name }}</td>
+                                    <td>{{ finding.product.prod_type.name }}</td>
                                     <td>
-                                        <span title="{{ finding.test.engagement.product.name }}">
-                                            {{ finding.test.engagement.product.name|truncatechars:20 }}
+                                        <span title="{{ finding.product.name }}">
+                                            {{ finding.product.name|truncatechars:20 }}
                                         </span>
                                     </td>
                                     <td>{{ finding.numerical_severity }}</td>
