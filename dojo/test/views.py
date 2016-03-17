@@ -169,7 +169,10 @@ def test_ics(request, tid):
 def add_findings(request, tid):
     test = Test.objects.get(id=tid)
     form_error = False
-    form = AddFindingForm(initial={'date': datetime.now(tz=localtz).date()})
+    form = AddFindingForm(initial={
+        'date': datetime.now(tz=localtz).date(),
+        'product': test.engagement.product
+})
     if request.method == 'POST':
         form = AddFindingForm(request.POST)
         if form.is_valid():
