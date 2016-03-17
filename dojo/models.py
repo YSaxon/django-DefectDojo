@@ -471,7 +471,7 @@ class VA(models.Model):
 
 
 class Finding(models.Model):
-    product = models.ForeignKey(Product, null=True, editable=True, blank=True, related_name='findings_o2m')
+    product = models.ForeignKey(Product, null=False, editable=True, blank=False, related_name='findings_o2m')
     title = models.TextField(max_length=1000)
     date = models.DateField(default=get_current_date)
     cwe = models.IntegerField(default=0, null=True, blank=True)
