@@ -61,7 +61,7 @@ class Product_Type(models.Model):
                                       false_p=False,
                                       duplicate=False,
                                       out_of_scope=False,
-                                      test__engagement__product__prod_type=self).filter(Q(severity="Critical") |
+                                      product__prod_type=self).filter(Q(severity="Critical") |
                                                                                         Q(severity="High") |
                                                                                         Q(severity="Medium") |
                                                                                         Q(severity="Low")).count()
@@ -128,11 +128,11 @@ class Product(models.Model):
                                       false_p=False,
                                       duplicate=False,
                                       out_of_scope=False,
-                                      test__engagement__product=self).count()
+                                      product=self).count()
 
     @property
     def endpoint_count(self):
-        endpoints = Endpoint.objects.filter(finding__test__engagement__product=self,
+        endpoints = Endpoint.objects.filter(finding__product=self,
                                             finding__active=True,
                                             finding__verified=True,
                                             finding__mitigated__isnull=True)
@@ -157,7 +157,7 @@ class Product(models.Model):
         if start_date is None or end_date is None:
             return {}
         else:
-            critical = Finding.objects.filter(test__engagement__product=self,
+            critical = Finding.objects.filter(product=self,
                                               mitigated__isnull=True,
                                               verified=True,
                                               false_p=False,
@@ -166,7 +166,7 @@ class Product(models.Model):
                                               severity="Critical",
                                               date__range=[start_date,
                                                            end_date]).count()
-            high = Finding.objects.filter(test__engagement__product=self,
+            high = Finding.objects.filter(product=self,
                                           mitigated__isnull=True,
                                           verified=True,
                                           false_p=False,
@@ -175,7 +175,7 @@ class Product(models.Model):
                                           severity="High",
                                           date__range=[start_date,
                                                        end_date]).count()
-            medium = Finding.objects.filter(test__engagement__product=self,
+            medium = Finding.objects.filter(product=self,
                                             mitigated__isnull=True,
                                             verified=True,
                                             false_p=False,
@@ -184,7 +184,7 @@ class Product(models.Model):
                                             severity="Medium",
                                             date__range=[start_date,
                                                          end_date]).count()
-            low = Finding.objects.filter(test__engagement__product=self,
+            low = Finding.objects.filter(product=self,
                                          mitigated__isnull=True,
                                          verified=True,
                                          false_p=False,
