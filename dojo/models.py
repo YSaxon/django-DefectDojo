@@ -471,6 +471,7 @@ class VA(models.Model):
 
 
 class Finding(models.Model):
+    product = models.ForeignKey(Product, null=True, editable=True, blank=True, related_name='findings_o2m')
     title = models.TextField(max_length=1000)
     date = models.DateField(default=get_current_date)
     cwe = models.IntegerField(default=0, null=True, blank=True)
@@ -501,7 +502,7 @@ class Finding(models.Model):
     numerical_severity = models.CharField(max_length=4)
     last_reviewed = models.DateTimeField(null=True, editable=False)
     last_reviewed_by = models.ForeignKey(User, null=True, editable=False, related_name='last_reviewed_by')
-    product = models.ForeignKey(Product, null=True, editable=True, blank=True, related_name='findings_o2m')
+    
     #numerical_severity_test = models.CharField(max_length=4)
     
     SEVERITIES = {'Info': 4, 'Low': 3, 'Medium': 2,

@@ -387,6 +387,7 @@ def promote_to_finding(request, fid):
     form = PromoteFindingForm(initial={'title': finding.title,
                                        'date': finding.date,
                                        'severity': finding.severity,
+                                       'product': test.engagement.product,#this one shouldn't be changed
                                        'description': finding.description,
                                        'test': finding.test,
                                        'reporter': finding.reporter})
@@ -432,6 +433,7 @@ def promote_to_finding(request, fid):
     return render(request, 'dojo/promote_to_finding.html',
                   {'form': form,
                    'test': test,
+                   'product': test.engagement.product,#this one shouldn't be changed
                    'stub_finding': finding,
                    'form_error': form_error,
                    })
