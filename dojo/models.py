@@ -501,7 +501,9 @@ class Finding(models.Model):
     numerical_severity = models.CharField(max_length=4)
     last_reviewed = models.DateTimeField(null=True, editable=False)
     last_reviewed_by = models.ForeignKey(User, null=True, editable=False, related_name='last_reviewed_by')
-
+    product = models.ForeignKey(Product, null=True, editable=True, blank=True, related_name='findings_o2m')
+    #numerical_severity_test = models.CharField(max_length=4)
+    
     SEVERITIES = {'Info': 4, 'Low': 3, 'Medium': 2,
                   'High': 1, 'Critical': 0}
 
