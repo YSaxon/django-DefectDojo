@@ -69,6 +69,13 @@
                 {% endif %}
             </div>
         </div>
+	  	{% if finding.product != finding.test.engagement.product%}
+	  	          <div class="panel-heading">
+	  					 <h4>
+	  						 Reassigned to product: {{finding.product}}
+						 </h4>
+					 </div>						
+	  	{% endif %}
         <div class="table-responsive">
             <table id="notes" class="table-striped table table-condensed table-hover centered">
                 <tr>

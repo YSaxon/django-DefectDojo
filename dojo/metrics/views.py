@@ -52,8 +52,8 @@ def metrics(request, mtype):
 
     findings = Finding.objects.filter(verified=True,
                                       severity__in=('Critical', 'High', 'Medium', 'Low', 'Info')).prefetch_related(
-        'test__engagement__product',
-        'test__engagement__product__prod_type',
+        'product',
+        'product__prod_type',
         'test__engagement__risk_acceptance',
         'risk_acceptance_set',
         'reporter').extra(
@@ -70,14 +70,14 @@ def metrics(request, mtype):
     if mtype != 'All':
         pt = Product_Type.objects.filter(id=mtype)
         request.GET._mutable = True
-        request.GET.appendlist('test__engagement__product__prod_type', mtype)
+        request.GET.appendlist('product__prod_type', mtype)
         request.GET._mutable = False
         mtype = pt[0].name
         show_pt_filter = False
         page_name = '%s Metrics' % mtype
         prod_type = pt
-    elif 'test__engagement__product__prod_type' in request.GET:
-        prod_type = Product_Type.objects.filter(id__in=request.GET.getlist('test__engagement__product__prod_type', []))
+    elif 'product__prod_type' in request.GET:
+        prod_type = Product_Type.objects.filter(id__in=request.GET.getlist('product__prod_type', []))
     else:
         prod_type = Product_Type.objects.all()
 
@@ -90,15 +90,15 @@ def metrics(request, mtype):
 
     if len(prod_type) > 0:
         findings_closed = Finding.objects.filter(mitigated__range=[start_date, end_date],
-                                                 test__engagement__product__prod_type__in=prod_type).prefetch_related(
-            'test__engagement__product')
+                                                 product__prod_type__in=prod_type).prefetch_related(
+            'product')
         # capture the accepted findings in period
         accepted_findings = Finding.objects.filter(risk_acceptance__created__range=[start_date, end_date],
-                                                   test__engagement__product__prod_type__in=prod_type). \
-            prefetch_related('test__engagement__product')
+                                                   product__prod_type__in=prod_type). \
+            prefetch_related('product')
         accepted_findings_counts = Finding.objects.filter(risk_acceptance__created__range=[start_date, end_date],
-                                                          test__engagement__product__prod_type__in=prod_type). \
-            prefetch_related('test__engagement__product').aggregate(
+                                                          product__prod_type__in=prod_type). \
+            prefetch_related('product').aggregate(
             total=Sum(
                 Case(When(severity__in=('Critical', 'High', 'Medium', 'Low'),
                           then=Value(1)),
@@ -126,11 +126,11 @@ def metrics(request, mtype):
         )
     else:
         findings_closed = Finding.objects.filter(mitigated__range=[start_date, end_date]).prefetch_related(
-            'test__engagement__product')
+            'product')
         accepted_findings = Finding.objects.filter(risk_acceptance__created__range=[start_date, end_date]). \
-            prefetch_related('test__engagement__product')
+            prefetch_related('product')
         accepted_findings_counts = Finding.objects.filter(risk_acceptance__created__range=[start_date, end_date]). \
-            prefetch_related('test__engagement__product').aggregate(
+            prefetch_related('product').aggregate(
             total=Sum(
                 Case(When(severity__in=('Critical', 'High', 'Medium', 'Low'),
                           then=Value(1)),
@@ -226,25 +226,25 @@ def metrics(request, mtype):
         in_period_counts[finding.severity] += 1
         in_period_counts['Total'] += 1
 
-        if finding.test.engagement.product.name not in in_period_details:
-            in_period_details[finding.test.engagement.product.name] = {
-                'path': reverse('view_product_findings', args=(finding.test.engagement.product.id,)),
+        if finding.product.name not in in_period_details:
+            in_period_details[finding.product.name] = {
+                'path': reverse('view_product_findings', args=(finding.product.id,)),
                 'Critical': 0, 'High': 0, 'Medium': 0, 'Low': 0, 'Info': 0, 'Total': 0}
         in_period_details[
-            finding.test.engagement.product.name
+            finding.product.name
         ][finding.severity] += 1
-        in_period_details[finding.test.engagement.product.name]['Total'] += 1
+        in_period_details[finding.product.name]['Total'] += 1
 
     for finding in accepted_findings:
-        if finding.test.engagement.product.name not in accepted_in_period_details:
-            accepted_in_period_details[finding.test.engagement.product.name] = {
-                'path': reverse('accepted_findings') + '?test__engagement__product=' + str(
-                    finding.test.engagement.product.id),
+        if finding.product.name not in accepted_in_period_details:
+            accepted_in_period_details[finding.product.name] = {
+                'path': reverse('accepted_findings') + '?product=' + str(
+                    finding.product.id),
                 'Critical': 0, 'High': 0, 'Medium': 0, 'Low': 0, 'Info': 0, 'Total': 0}
         accepted_in_period_details[
-            finding.test.engagement.product.name
+            finding.product.name
         ][finding.severity] += 1
-        accepted_in_period_details[finding.test.engagement.product.name]['Total'] += 1
+        accepted_in_period_details[finding.product.name]['Total'] += 1
 
     for f in findings_closed:
         closed_in_period_counts[f.severity] += 1
@@ -252,7 +252,7 @@ def metrics(request, mtype):
 
         if f.test.engagement.product.name not in closed_in_period_details:
             closed_in_period_details[f.test.engagement.product.name] = {
-                'path': reverse('closed_findings') + '?test__engagement__product=' + str(
+                'path': reverse('closed_findings') + '?product=' + str(
                     f.test.engagement.product.id),
                 'Critical': 0, 'High': 0, 'Medium': 0, 'Low': 0, 'Info': 0, 'Total': 0}
         closed_in_period_details[
@@ -328,7 +328,7 @@ def simple_metrics(request):
         total_opened = []
         findings_broken_out = {}
 
-        total = Finding.objects.filter(test__engagement__product__prod_type=pt,
+        total = Finding.objects.filter(product__prod_type=pt,
                                        verified=True,
                                        false_p=False,
                                        duplicate=False,
@@ -419,12 +419,12 @@ def product_type_counts(request):
             oip_3 = opened_in_period(start_date + relativedelta(months=-3), end_of_month + relativedelta(months=-3), pt)
 
             closed_in_period = Finding.objects.filter(mitigated__range=[start_date, end_date],
-                                                      test__engagement__product__prod_type=pt,
+                                                      product__prod_type=pt,
                                                       severity__in=('Critical', 'High', 'Medium', 'Low')).values(
                 'numerical_severity').annotate(Count('numerical_severity')).order_by('numerical_severity')
 
             total_closed_in_period = Finding.objects.filter(mitigated__range=[start_date, end_date],
-                                                            test__engagement__product__prod_type=pt,
+                                                            product__prod_type=pt,
                                                             severity__in=(
                                                                 'Critical', 'High', 'Medium', 'Low')).aggregate(
                 total=Sum(
@@ -438,7 +438,7 @@ def product_type_counts(request):
                                                    duplicate=False,
                                                    out_of_scope=False,
                                                    mitigated__isnull=True,
-                                                   test__engagement__product__prod_type=pt,
+                                                   product__prod_type=pt,
                                                    severity__in=('Critical', 'High', 'Medium', 'Low')).values(
                 'numerical_severity').annotate(Count('numerical_severity')).order_by('numerical_severity')
 
@@ -448,7 +448,7 @@ def product_type_counts(request):
                                                          duplicate=False,
                                                          out_of_scope=False,
                                                          mitigated__isnull=True,
-                                                         test__engagement__product__prod_type=pt,
+                                                         product__prod_type=pt,
                                                          severity__in=('Critical', 'High', 'Medium', 'Low')).aggregate(
                 total=Sum(
                     Case(When(severity__in=('Critical', 'High', 'Medium', 'Low'),
@@ -461,11 +461,11 @@ def product_type_counts(request):
                                                        duplicate=False,
                                                        out_of_scope=False,
                                                        mitigated__isnull=True,
-                                                       test__engagement__product__prod_type=pt,
+                                                       product__prod_type=pt,
                                                        severity__in=(
                                                            'Critical', 'High', 'Medium', 'Low')).prefetch_related(
-                'test__engagement__product',
-                'test__engagement__product__prod_type',
+                'product',
+                'product__prod_type',
                 'test__engagement__risk_acceptance',
                 'reporter').order_by(
                 'numerical_severity')

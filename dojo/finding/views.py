@@ -47,7 +47,7 @@ def open_findings(request):
     if request.user.is_staff:
         findings = OpenFingingSuperFilter(request.GET, queryset=findings, user=request.user)
     else:
-        findings = findings.filter(test__engagement__product__authorized_users__in=[request.user])
+        findings = findings.filter(product__authorized_users__in=[request.user])
         findings = OpenFindingFilter(request.GET, queryset=findings, user=request.user)
 
     title_words = [word
@@ -58,8 +58,8 @@ def open_findings(request):
     paged_findings = get_page_items(request, findings, 25)
 
     product_type = None
-    if 'test__engagement__product__prod_type' in request.GET:
-        p = request.GET.getlist('test__engagement__product__prod_type', [])
+    if 'product__prod_type' in request.GET:
+        p = request.GET.getlist('product__prod_type', [])
         if len(p) == 1:
             product_type = get_object_or_404(Product_Type, id=p[0])
 
@@ -131,7 +131,7 @@ def closed_findings(request):
 def view_finding(request, fid):
     finding = get_object_or_404(Finding, id=fid)
     user = request.user
-    if user.is_staff or user in finding.test.engagement.product.authorized_users.all():
+    if user.is_staff or user in finding.product.authorized_users.all():
         pass  # user is authorized for this product
     else:
         raise PermissionDenied
@@ -387,6 +387,7 @@ def promote_to_finding(request, fid):
     form = PromoteFindingForm(initial={'title': finding.title,
                                        'date': finding.date,
                                        'severity': finding.severity,
+                                       'product': test.engagement.product,#this one shouldn't be changed
                                        'description': finding.description,
                                        'test': finding.test,
                                        'reporter': finding.reporter})
@@ -432,6 +433,7 @@ def promote_to_finding(request, fid):
     return render(request, 'dojo/promote_to_finding.html',
                   {'form': form,
                    'test': test,
+                   'product': test.engagement.product,#this one shouldn't be changed
                    'stub_finding': finding,
                    'form_error': form_error,
                    })

@@ -215,6 +215,7 @@ def get_item(item_node, test):
 
     # Finding and Endpoint objects returned have not been saved to the database
     finding = Finding(title=item_node.findall('name')[0].text,
+                      product=test.engagement.product,
                       url=url,
                       test=test,
                       severity=severity,

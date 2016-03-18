@@ -70,7 +70,7 @@ def view_product(request, pid):
         raise PermissionDenied
 
     try:
-        start_date = Finding.objects.filter(test__engagement__product=prod).order_by('date')[:1][0].date
+        start_date = Finding.objects.filter(product=prod).order_by('date')[:1][0].date
     except:
         start_date = localtz.localize(datetime.today())
 
@@ -81,14 +81,14 @@ def view_product(request, pid):
     accepted_findings = [finding for ra in risk_acceptances
                          for finding in ra.accepted_findings.all()]
 
-    verified_findings = Finding.objects.filter(test__engagement__product=prod,
+    verified_findings = Finding.objects.filter(product=prod,
                                                date__range=[start_date, end_date],
                                                false_p=False,
                                                verified=True,
                                                duplicate=False,
                                                out_of_scope=False)
 
-    open_findings = Finding.objects.filter(test__engagement__product=prod,
+    open_findings = Finding.objects.filter(product=prod,
                                            date__range=[start_date, end_date],
                                            false_p=False,
                                            verified=True,
@@ -97,7 +97,7 @@ def view_product(request, pid):
                                            active=True,
                                            mitigated__isnull=True)
 
-    closed_findings = Finding.objects.filter(test__engagement__product=prod,
+    closed_findings = Finding.objects.filter(product=prod,
                                              date__range=[start_date, end_date],
                                              false_p=False,
                                              verified=True,
@@ -216,7 +216,7 @@ def all_product_findings(request, pid):
     p = get_object_or_404(Product, id=pid)
     result = ProductFindingFilter(
         request.GET,
-        queryset=Finding.objects.filter(test__engagement__product=p,
+        queryset=Finding.objects.filter(product=p,
                                         active=True,
                                         verified=True))
     page = get_page_items(request, result, 25)

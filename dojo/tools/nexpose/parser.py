@@ -252,6 +252,7 @@ class NexposeFullXmlParser(object):
                             refs += "\n"
 
                         find = Finding(title=vuln['name'],
+                                       product=test.engagement.product,
                                        description=html2text.html2text(
                                                vuln['desc']) + "\n\n" + html2text.html2text(vuln['pluginOutput']),
                                        severity=sev,

@@ -48,7 +48,7 @@ def simple_search(request):
                 products = watson.search(clean_query, models=(Product,))
             else:
                 findings = watson.search(clean_query, models=(
-                Finding.objects.filter(test__engagement__product__authorized_users__in=[
+                Finding.objects.filter(product__authorized_users__in=[
                     request.user]),))
                 tests = watson.search(clean_query,
                                       models=(Test.objects.filter(engagement__product__authorized_users__in=[

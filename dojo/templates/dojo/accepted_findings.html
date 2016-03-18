@@ -29,7 +29,7 @@
                             <th nowrap="nowrap">{% dojo_sort request 'Accepted On' 'test__engagement__risk_acceptance__created' %}</th>
                             <th>Age</th>
                             <th nowrap="nowrap">{% dojo_sort request 'Severity' 'numerical_severity' 'asc' %}</th>
-                            <th nowrap="nowrap">{% dojo_sort request 'Product' 'test__engagement__product__name' %}</th>
+                            <th nowrap="nowrap">{% dojo_sort request 'Product' 'product__name' %}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -45,8 +45,8 @@
                                     <p class="text-error">
                                 {% else %}<p>{% endif %}{{ finding.severity }}</p></td>
                                 <td><a
-                                        href="{% url 'view_product' finding.test.engagement.product.id %}"
-                                        title="{{ finding.test.engagement.product }}">{{ finding.test.engagement.product}}</a>
+                                        href="{% url 'view_product' finding.product.id %}"
+                                        title="{{ finding.product }}">{{ finding.product}}</a>
                                 </td>
                             </tr>
                         {% endfor %}

@@ -77,6 +77,7 @@ class CheckmarxXMLParser(object):
                             findingdetail += '\n'
 
                     find = Finding(title=title,
+                                   product=test.engagement.product,
                                    cwe=int(cwe),
                                    test=test,
                                    active=False,
