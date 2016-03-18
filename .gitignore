@@ -85,5 +85,4 @@ components/*
 bower_components/
 dojo/static/*
 !dojo/static/dojo/*
-static/
 
