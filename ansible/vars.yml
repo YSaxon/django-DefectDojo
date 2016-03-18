@@ -12,7 +12,8 @@ dd_sql_pass: 'monatemon;64'
 dd_sql_db: 'dd'
 
 # Defines where the DefectDojo application will be installed
-dd_install_dir: /usr/share/django-DefectDojo
+#dd_install_dir: /usr/share/ddapp
+dd_install_dir: /vagrant/VMSHARE5/ddapp
 
 # Defines the folder where DefectDojo's virtualenv will be stored
 venv_dir: /home/{{ dd_user }}/.venvs/{{ application_name }}
@@ -30,5 +31,5 @@ dd_git_branch: 'master'
 # Gunicorn settings
 gunicorn_num_workers: 3
 gunicorn_timeout: 120
-gunicorn_port: 8099
+gunicorn_port: 9005
 gunicorn_log_file: '{{ dd_install_dir }}/gunicorn.log'

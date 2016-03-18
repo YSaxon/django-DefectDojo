@@ -1,5 +1,5 @@
 ---
+- include: dbm.yml
 #- include: os.yml
 #- include: sql.yml
 #- include: app.yml
-- include: dbm.yml

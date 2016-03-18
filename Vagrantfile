@@ -8,6 +8,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "ubuntu/trusty64"
 
   config.ssh.forward_agent = true
+  
+  #config.vm.synced_folder "VMSHARE2/", "/usr/share",
+  #  owner: "dd", group: "root"
 
   config.vm.hostname = "dd"
   config.vm.network :private_network, ip: "192.168.13.37"
