@@ -19,9 +19,9 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunPython(default_product_in_finding, reverse_code=migrations.RunPython.noop),       
-        migrations.AlterField(
-            model_name='finding',
-            name='product',
-            field=models.ForeignKey(related_name='findings_o2m', to='dojo.Product', null=False, blank=False),
-        ),
+#        migrations.AlterField(
+#            model_name='finding',
+#            name='product',
+#            field=models.ForeignKey(related_name='findings_o2m', to='dojo.Product', null=False, blank=False),
+#        ),
     ]
