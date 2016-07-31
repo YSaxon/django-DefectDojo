@@ -210,7 +210,8 @@ class Product_TypeProductForm(forms.ModelForm):
 
 class ImportScanForm(forms.Form):
     SCAN_TYPE_CHOICES = (("Burp Scan", "Burp Scan"), ("Nessus Scan", "Nessus Scan"), ("Nexpose Scan", "Nexpose Scan"),
-                         ("Veracode Scan", "Veracode Scan"), ("Checkmarx Scan", "Checkmarx Scan"), ("ZAP Scan", "ZAP Scan"))
+                         ("AppSpider Scan", "AppSpider Scan"), ("Veracode Scan", "Veracode Scan"),
+                         ("Checkmarx Scan", "Checkmarx Scan"), ("ZAP Scan", "ZAP Scan"))
     scan_date = forms.DateTimeField(
         required=True,
         label="Scan Completion Date",
@@ -220,6 +221,8 @@ class ImportScanForm(forms.Form):
     minimum_severity = forms.ChoiceField(help_text='Minimum severity level to be imported',
                                          required=True,
                                          choices=SEVERITY_CHOICES[0:4])
+    active = forms.BooleanField(help_text="Select if these findings are currently active.", required=False)
+    verified = forms.BooleanField(help_text="Select if these findings have been verified.", required=False)
     scan_type = forms.ChoiceField(required=True, choices=SCAN_TYPE_CHOICES)
     file = forms.FileField(widget=forms.widgets.FileInput(
         attrs={"accept": ".xml, .csv, .nessus"}),
@@ -409,7 +412,7 @@ class EngForm(forms.ModelForm):
     lead = forms.ModelChoiceField(
         queryset=User.objects.exclude(is_staff=False),
         required=True, label="Testing Lead")
-    test_strategy = forms.URLField(required=True, label="Test Strategy URL")
+    test_strategy = forms.URLField(required=False, label="Test Strategy URL")
 
     class Meta:
         model = Engagement
@@ -434,7 +437,7 @@ class EngForm2(forms.ModelForm):
     lead = forms.ModelChoiceField(
         queryset=User.objects.exclude(is_staff=False),
         required=True, label="Testing Lead")
-    test_strategy = forms.URLField(required=True, label="Test Strategy URL")
+    test_strategy = forms.URLField(required=False, label="Test Strategy URL")
 
     class Meta:
         model = Engagement
@@ -987,6 +990,13 @@ class ReportOptionsForm(forms.Form):
     include_executive_summary = forms.ChoiceField(choices=yes_no, label="Executive Summary")
     include_table_of_contents = forms.ChoiceField(choices=yes_no, label="Table of Contents")
     report_type = forms.ChoiceField(choices=(('AsciiDoc', 'AsciiDoc'), ('PDF', 'PDF')))
+
+
+class CustomReportOptionsForm(forms.Form):
+    yes_no = (('0', 'No'), ('1', 'Yes'))
+    report_name = forms.CharField(required=False, max_length=100)
+    include_finding_notes = forms.ChoiceField(required=False, choices=yes_no)
+    report_type = forms.ChoiceField(required=False, choices=(('AsciiDoc', 'AsciiDoc'), ('PDF', 'PDF')))
 
 
 class DeleteReportForm(forms.ModelForm):

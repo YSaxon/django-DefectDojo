@@ -319,6 +319,10 @@ DefectDojo has the ability to import reports from other security tools.  Current
 2. Nessus (CSV, XML)
 3. Nexpose XML 2.0
 4. ZAP XML
+5. Veracode Detailed XML Report
+6. Checkmarx Detailed XML Report
+7. AppSpider Vulnerabilities Summary XML Report (VulnerabilitiesSummary.xml)
+
 
 The importers analyze each report and create new Findings for each item reported.  DefectDojo collapses duplicate
 Findings by capturing the individual hosts vulnerable.
@@ -375,6 +379,11 @@ follow the directions for your specific OS in the `wkhtmltopdf documentation`_.
 
 Some operating systems are capable of installing `wkhtmltopdf` from their package managers:
 
+.. Note::
+    Report email notifications are commented out by default.  In order to enable them please uncomment the
+    `email_requester(report, uri, error=None)` function and its references in the `tasks.py` file in the main `dojo`
+    directory.
+
 Mac: ::
 
     brew install Caskroom/cask/wkhtmltopdf
@@ -387,9 +396,10 @@ Fedora/Centos: ::
 
     sudo yum install wkhtmltopdf
 
-Warning! Version in debian/ubuntu repos have reduced functionality (because it compiled without the wkhtmltopdf QT
-patches), such as adding outlines, headers, footers, TOC etc. To use this options you should install static binary from
-`wkhtmltopdf`_ site or you can use this `script`_.
+.. Warning::
+    Version in debian/ubuntu repos have reduced functionality (because it compiled without the wkhtmltopdf QT
+    patches), such as adding outlines, headers, footers, TOC etc. To use this options you should install static binary
+    from `wkhtmltopdf`_ site or you can use this :download:`script <../reports.sh>`.
 
 Additionally, DefectDojo takes advantage of `python-PDFKit`_ to interact with the `wkhtmltopdf` commandline interface.
 It is easily installed by running: ::
@@ -437,7 +447,6 @@ instructions`_ from the Celery documentation.
 
 .. _wkhtmltopdf: http://wkhtmltopdf.org/
 .. _wkhtmltopdf documentation: https://github.com/pdfkit/pdfkit/wiki/Installing-WKHTMLTOPDF
-.. _script: https://github.com/JazzCore/python-pdfkit/blob/master/travis/before-script.sh
 .. _python-PDFKit: https://github.com/JazzCore/python-pdfkit
 .. _Celery: http://docs.celeryproject.org/en/latest/index.html
 .. _Celery documentation: http://docs.celeryproject.org/en/latest/tutorials/daemonizing.html
@@ -449,9 +458,20 @@ Reports can be generated for:
 2.  Individual Products
 3.  Endpoints
 4.  Product Types
+5.  Custom Reports
 
 .. image:: /_static/report_2.png
     :alt: Report Generation
 
 Filtering is available on all Report Generation views to aid in focusing the report for the appropriate need.
 
+Custom reports allow you to select specific components to be added to the report.  These include:
+
+1.  Cover Page
+2.  Table of Contents
+3.  WYSIWYG Content
+4.  Findings List
+5.  Endpoint List
+6.  Page Breaks
+
+The custom report workflow takes advantage of the same asynchronous process described above.

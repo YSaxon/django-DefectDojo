@@ -34,7 +34,7 @@
   sudo_user: '{{ dd_user }}'
 
 - name: Install Django
-  pip: name=Django version=1.8.4 virtualenv={{ venv_dir }}
+  pip: name=Django version=1.8.10 virtualenv={{ venv_dir }}
   sudo: yes
   sudo_user: '{{ dd_user }}'
 
@@ -57,6 +57,11 @@
   pip: name=django-tastypie virtualenv={{ venv_dir }}
   sudo: yes
   sudo_user: '{{ dd_user }}'
+
+- name: Install defusedxml
+  pip: name=defusedxml virtualenv={{ venv_dir }}
+  sudo: yes
+  sudo_user: '{{ dd_user}}'
 
 - name: Install gunicorn
   pip: name=gunicorn virtualenv={{ venv_dir }}
@@ -114,7 +119,7 @@
   sudo_user: '{{ dd_user }}'
 
 - name: Install django-auditlog
-  pip: name=django-auditlog version=0.3.1 virtualenv={{ venv_dir }}
+  pip: name=django-auditlog version=0.3.3 virtualenv={{ venv_dir }}
   sudo: yes
   sudo_user: '{{ dd_user }}'
 

@@ -221,6 +221,8 @@ def import_scan_results(request, eid):
             file = request.FILES['file']
             scan_date = form.cleaned_data['scan_date']
             min_sev = form.cleaned_data['minimum_severity']
+            active = form.cleaned_data['active']
+            verified = form.cleaned_data['verified']
 
             scan_type = request.POST['scan_type']
             if not any(scan_type in code for code in ImportScanForm.SCAN_TYPE_CHOICES):
@@ -255,7 +257,18 @@ def import_scan_results(request, eid):
                     item.reporter = request.user
                     item.last_reviewed = datetime.now(tz=localtz)
                     item.last_reviewed_by = request.user
+                    item.active = active
+                    item.verified = verified
                     item.save()
+
+                    if hasattr(item, 'unsaved_req_resp') and len(item.unsaved_req_resp) > 0:
+                        for req_resp in item.unsaved_req_resp:
+                            burp_rr = BurpRawRequestResponse(finding=item,
+                                                             burpRequestBase64=req_resp["req"],
+                                                             burpResponseBase64=req_resp["resp"],
+                                                             )
+                            burp_rr.clean()
+                            burp_rr.save()
 
                     if item.unsaved_request is not None and item.unsaved_response is not None:
                         burp_rr = BurpRawRequestResponse(finding=item,

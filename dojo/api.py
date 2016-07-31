@@ -3,14 +3,14 @@ from tastypie import fields
 from tastypie.authentication import ApiKeyAuthentication, MultiAuthentication, SessionAuthentication
 from tastypie.authorization import Authorization
 from tastypie.authorization import DjangoAuthorization
-from tastypie.constants import ALL
+from tastypie.constants import ALL, ALL_WITH_RELATIONS
 from tastypie.exceptions import Unauthorized
 from tastypie.resources import ModelResource
 from tastypie.serializers import Serializer
 from tastypie.validation import CleanedDataFormValidation
 
 from dojo.models import Product, Engagement, Test, Finding, \
-    User, ScanSettings, IPScan, Scan, Stub_Finding
+    User, ScanSettings, IPScan, Scan, Stub_Finding, Risk_Acceptance
 from dojo.forms import ProductForm, EngForm2, TestForm, \
     ScanSettingsForm, FindingForm, StubFindingForm
 
@@ -374,7 +374,8 @@ class TestResource(BaseModelResource):
             'target_end': ALL,
             'notes': ALL,
             'percent_complete': ALL,
-            'actual_time': ALL
+            'actual_time': ALL,
+            'engagement': ALL,
         }
         authentication = DojoApiKeyAuthentication()
         authorization = DjangoAuthorization()
@@ -384,6 +385,14 @@ class TestResource(BaseModelResource):
     def dehydrate(self, bundle):
         bundle.data['test_type'] = bundle.obj.test_type
         return bundle
+
+
+class RiskAcceptanceResource(BaseModelResource):
+    class Meta:
+        resource_name = 'risk_acceptances'
+        list_allowed_methods = ['get']
+        detail_allowed_methods = ['get']
+        queryset = Risk_Acceptance.objects.all().order_by('created')
 
 
 """
@@ -404,6 +413,9 @@ class TestResource(BaseModelResource):
 class FindingResource(BaseModelResource):
     reporter = fields.ForeignKey(UserResource, 'reporter', null=False)
     test = fields.ForeignKey(TestResource, 'test', null=False)
+    risk_acceptance = fields.ManyToManyField(RiskAcceptanceResource, 'risk_acceptance', null=True)
+    product = fields.ForeignKey(ProductResource, 'test__engagement__product', full=False, null=False)
+    engagement = fields.ForeignKey(EngagementResource, 'test__engagement', full=False, null=False)
 
     class Meta:
         resource_name = 'findings'
@@ -421,12 +433,17 @@ class FindingResource(BaseModelResource):
             'description': ALL,
             'mitigated': ALL,
             'endpoint': ALL,
-            'test': ALL,
+            'test': ALL_WITH_RELATIONS,
             'active': ALL,
             'verified': ALL,
             'false_p': ALL,
             'reporter': ALL,
             'url': ALL,
+            'out_of_scope': ALL,
+            'duplicate': ALL,
+            'risk_acceptance': ALL,
+            'engagement': ALL_WITH_RELATIONS,
+            'product': ALL_WITH_RELATIONS
         }
         authentication = DojoApiKeyAuthentication()
         authorization = DjangoAuthorization()
