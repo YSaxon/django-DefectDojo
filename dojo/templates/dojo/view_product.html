@@ -38,6 +38,13 @@
                                     </a>
                                 </li>
                             {% endif %}
+                            {% if user.is_staff %}
+                                <li role="presentation">
+                                    <a class="" href="{% url 'add_meta_data' prod.id %}">
+                                        <i class="fa fa-list-alt"></i> Add Metadata
+                                    </a>
+                                </li>
+                            {% endif %}
                             <li role="presentation">
                                 <a href="{% url 'view_product_findings' prod.id %}">
                                     <i class="fa fa-bug"></i> View Open Findings
@@ -94,7 +101,7 @@
                     <div class="panel-body">
                         <div id="open_findings" class="graph"></div>
                     </div>
-                     <div class="panel-footer">
+                    <div class="panel-footer">
                         <i title="Accepted since {{ start_date }}"
                            class="text-info fa fa-info-circle"></i>
                         <small>Opened since {{ start_date|date:"D., M. d, Y" }}</small>
@@ -121,7 +128,7 @@
                     <div class="panel-body">
                         <div id="closed_findings" class="graph"></div>
                     </div>
-                     <div class="panel-footer">
+                    <div class="panel-footer">
                         <i title="Accepted since {{ start_date }}"
                            class="text-info fa fa-info-circle"></i>
                         <small>Closed since {{ start_date|date:"D., M. d, Y" }}</small>
@@ -137,7 +144,12 @@
 
                                 <div class="pull-right text-right">
                                     <span class="fa-2x">{{ accepted_findings|length }}</span>
+<<<<<<< HEAD
                                 <span><a href="{% url 'accepted_findings' %}?product={{ prod.id }}">Accepted
+=======
+                                    <span><a
+                                            href="{% url 'accepted_findings' %}?test__engagement__product={{ prod.id }}">Accepted
+>>>>>>> OWASP/master
                                     findings. <i class="fa fa-arrow-circle-right"></i></a>
                                 </span>
                                 </div>
@@ -163,7 +175,8 @@
 
                                 <div class="pull-right inline-block text-right">
                                     <span class=" fa-2x">{{ new_findings|length }}</span>
-                                    <span><a href="{% url 'open_findings' %}?test__engagement__product={{ prod.id }}&amp;date=2">new
+                                    <span><a
+                                            href="{% url 'open_findings' %}?test__engagement__product={{ prod.id }}&amp;date=2">new
                                         finding{{ new_findings|length|pluralize }} <i
                                                 class="fa fa-arrow-circle-right"></i></a>
                                     </span>
@@ -356,6 +369,38 @@
             </div>
         </div>
     </div>
+    {% if product_metadata %}
+        <div class="row">
+            <div class="col-md-12">
+                <div class="panel panel-default table-responsive">
+                    <div class="panel-heading">
+                        <h4>Additional Information
+                            <div class="btn-group pull-right">
+                                <a title="Edit Information" class="btn btn-sm btn-primary"
+                                   href="{% url 'edit_meta_data' prod.id %}">
+                                    <span class="fa fa-pencil-square-o"></span>
+                                </a>
+                                <a title="Add Information" class="btn btn-sm btn-primary"
+                                   href="{% url 'add_meta_data' prod.id %}">
+                                    <span class="fa fa-plus"></span>
+                                </a>
+                            </div>
+                        </h4>
+                    </div>
+
+                    <div class="panel-body">
+                        {% for key, value in product_metadata.items %}
+                            <div class="col-md-2 centered">
+                                <b>{{ key }}</b><br/>
+                                {{ value }}
+                                <br/>&nbsp;
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
     <div class="row">
         <div class="col-md-12">
             <div class="panel panel-default">
@@ -367,6 +412,21 @@
                 </div>
             </div>
         </div>
+
+        {% if prod.tags %}
+            <div class="col-md-12">
+                <div class="panel panel-default tags">
+                    <div class="panel-heading">
+                        <h4>Tags</h4>
+                    </div>
+                    <div class="tags panel-body">
+                        {% for tag in prod.tags %}
+                            <span class="label label-primary">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
 
 
         {% if user.is_staff %}
@@ -489,7 +549,6 @@
 
 {% endblock %}
 {% block postscript %}
-    <script type="text/javascript" src="{% static "jquery-cookie/jquery.cookie.js" %}"></script>
     <script type="text/javascript" src="{% static "jquery-highlight/jquery.highlight.js" %}"></script>
     <!-- Flot Charts JavaScript -->
     <script src="{% static "flot/excanvas.min.js" %}"></script>

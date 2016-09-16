@@ -16,4 +16,8 @@ urlpatterns = [
         views.all_product_findings, name='view_product_findings'),
     url(r'^product/(?P<pid>\d+)/new_engagement$', views.new_eng_for_app,
         name='new_eng_for_prod'),
+    url(r'^product/(?P<pid>\d+)/add_meta_data', views.add_meta_data,
+        name='add_meta_data'),
+    url(r'^product/(?P<pid>\d+)/edit_meta_data', views.edit_meta_data,
+        name='edit_meta_data'),
 ]

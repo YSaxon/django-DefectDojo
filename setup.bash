@@ -12,14 +12,14 @@ function get_db_details() {
 
     if mysql -fs -u$SQLUSER -p$SQLPWD $DBNAME >/dev/null 2>&1 </dev/null; then
         echo "Database $DBNAME already exists!"
-        echo 
+        echo
         read -p "Drop database $DBNAME? [Y/n] " DELETE
         if [[ ! $DELETE =~ ^[nN]$ ]]; then
-            mysqladmin -f --user=$SQLUSER --password=$SQLPWD drop $DBNAME 
-            mysqladmin --user=$SQLUSER --password=$SQLPWD create $DBNAME 
+            mysqladmin -f --user=$SQLUSER --password=$SQLPWD drop $DBNAME
+            mysqladmin --user=$SQLUSER --password=$SQLPWD create $DBNAME
         else
             echo "Error! Must supply an empty database to proceed."
-            echo 
+            echo
             get_db_details
         fi
     else
@@ -45,6 +45,7 @@ echo
 
 YUM_CMD=$(which yum)
 APT_GET_CMD=$(which apt-get)
+BREW_CMD=$(which brew)
 
 if [[ ! -z $YUM_CMD ]]; then
     sudo curl -sL https://rpm.nodesource.com/setup | sudo bash -
@@ -52,6 +53,8 @@ if [[ ! -z $YUM_CMD ]]; then
 	sudo yum groupinstall 'Development Tools'
 elif [[ ! -z $APT_GET_CMD ]]; then
     sudo apt-get install gcc libssl-dev python-dev libmysqlclient-dev python-pip mysql-server nodejs-legacy wkhtmltopdf npm -y
+elif [[ ! -z $BREW_CMD ]]; then
+    brew install gcc openssl python mysql node npm Caskroom/cask/wkhtmltopdf
 else
 	echo "ERROR! OS not supported. Try the Vagrant option."
 	exit 1;
@@ -60,25 +63,44 @@ fi
 # bower install
 sudo npm install -g bower
 
-echo 
+echo
 
 get_db_details
 
 unset HISTFILE
+
+if [[ ! -z $BREW_CMD ]]; then
+	LC_CTYPE=C
+fi
 
 SECRET=`cat /dev/urandom | tr -dc "a-zA-Z0-9" | head -c 128`
 
 cp dojo/settings.dist.py dojo/settings.py
 
 # Save MySQL details in settings file
-sed -i  "s/MYSQLUSER/$SQLUSER/g" dojo/settings.py
-sed -i  "s/MYSQLPWD/$SQLPWD/g" dojo/settings.py
-sed -i  "s/MYSQLDB/$DBNAME/g" dojo/settings.py
-sed -i  "s#DOJODIR#$PWD/dojo#g" dojo/settings.py
-sed -i  "s/DOJOSECRET/$SECRET/g" dojo/settings.py
-sed -i  "s#BOWERDIR#$PWD/components#g" dojo/settings.py
-sed -i  "s#DOJO_MEDIA_ROOT#$PWD/media/#g" dojo/settings.py
-sed -i  "s#DOJO_STATIC_ROOT#$PWD/static/#g" dojo/settings.py
+if [[ ! -z $BREW_CMD ]]; then
+  sed -i ''  "s/MYSQLHOST/localhost/g" dojo/settings.py
+  sed -i ''  "s/MYSQLPORT/3306/g" dojo/settings.py
+	sed -i ''  "s/MYSQLUSER/$SQLUSER/g" dojo/settings.py
+	sed -i ''  "s/MYSQLPWD/$SQLPWD/g" dojo/settings.py
+	sed -i ''  "s/MYSQLDB/$DBNAME/g" dojo/settings.py
+	sed -i ''  "s#DOJODIR#$PWD/dojo#g" dojo/settings.py
+	sed -i ''  "s/DOJOSECRET/$SECRET/g" dojo/settings.py
+	sed -i ''  "s#BOWERDIR#$PWD/components#g" dojo/settings.py
+	sed -i ''  "s#DOJO_MEDIA_ROOT#$PWD/media/#g" dojo/settings.py
+	sed -i ''  "s#DOJO_STATIC_ROOT#$PWD/static/#g" dojo/settings.py
+else
+  sed -i  "s/MYSQLHOST/localhost/g" dojo/settings.py
+	sed -i  "s/MYSQLPORT/3306/g" dojo/settings.py
+	sed -i  "s/MYSQLUSER/$SQLUSER/g" dojo/settings.py
+	sed -i  "s/MYSQLPWD/$SQLPWD/g" dojo/settings.py
+	sed -i  "s/MYSQLDB/$DBNAME/g" dojo/settings.py
+	sed -i  "s#DOJODIR#$PWD/dojo#g" dojo/settings.py
+	sed -i  "s/DOJOSECRET/$SECRET/g" dojo/settings.py
+	sed -i  "s#BOWERDIR#$PWD/components#g" dojo/settings.py
+	sed -i  "s#DOJO_MEDIA_ROOT#$PWD/media/#g" dojo/settings.py
+	sed -i  "s#DOJO_STATIC_ROOT#$PWD/static/#g" dojo/settings.py
+fi
 
 # Detect Python version
 PYV=`python -c "import sys;t='{v[0]}.{v[1]}'.format(v=list(sys.version_info[:2]));sys.stdout.write(t)";`
@@ -87,7 +109,7 @@ if [[ "$PYV"<"2.7" ]]; then
     exit 1;
 else
     echo "Leaving Django 1.8.10 requirement"
-fi  
+fi
 
 # Detect if we're in a a virtualenv
 if python -c 'import sys; print sys.real_prefix' 2>/dev/null; then

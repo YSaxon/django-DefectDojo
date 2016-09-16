@@ -29,6 +29,11 @@
                                 </a>
                             </li>
                             <li role="presentation">
+                                <a href="{% url 'manage_images' finding.id %}">
+                                    <i class="fa fa-file-image-o"></i> Manage Images
+                                </a>
+                            </li>
+                            <li role="presentation">
                                 <a href="{% url 'touch_finding' finding.id %}">
                                     <i class="fa fa-clock-o"></i> Touch Finding
                                 </a>
@@ -132,6 +137,24 @@
         </div>
     </div>
 
+    {% if finding.tags %}
+        <div class="row to_highlight">
+            <div class="col-md-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4>
+                            Tags
+                        </h4>
+                    </div>
+                    <div class="tags panel-body">
+                        {% for tag in finding.tags %}
+                            <span class="label label-primary">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
 
     <div class="row to_highlight">
         <div class="col-md-12">
@@ -145,7 +168,8 @@
 
                 {% if  finding.endpoints.all %}
                     {% colgroup finding.endpoints.all into 3 cols as grouped_items %}
-                    <table id="vuln_endpoints" class="collapse in table-striped table table table-condensed table-hover finding-endpoints">
+                    <table id="vuln_endpoints"
+                           class="collapse in table-striped table table table-condensed table-hover finding-endpoints">
                         {% for row in grouped_items %}
                             <tr>
                                 {% for item in row %}
@@ -171,17 +195,75 @@
         <div class="panel panel-default">
             <div class="panel-heading">
                 <h4>Description <span class="pull-right"><a data-toggle="collapse" href="#vuln_desc"><i
-                                class="glyphicon glyphicon-chevron-up"></i></a></span></h4>
+                        class="glyphicon glyphicon-chevron-up"></i></a></span></h4>
             </div>
             <div id="vuln_desc" class="panel-body finding-description collapse in">
                 <pre>{{ finding.description }}</pre>
             </div>
         </div>
 
+        {% if finding.images.all %}
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4>
+                        Images
+                        <div class="pull-right btn-group" role="group">
+                            <a title="Edit Images" class="btn btn-sm btn-primary"
+                               href="{% url 'manage_images' finding.id %}">
+                                <span class="fa fa-pencil-square-o"></span>
+                            </a>
+                            <a data-toggle="collapse" href="#vuln_pics" class="btn btn-sm btn-primary">
+                                <i class="glyphicon glyphicon-chevron-up"></i>
+                            </a>
+                        </div>
+                    </h4>
+                </div>
+                <div class="panel-body  collapse in" id="vuln_pics">
+                    {% for pic in finding.images.all %}
+                        <div class="col-md-1">
+                            <a href="#"
+                               data-imageurl="{{ request.scheme }}://{{ request.get_host }}{{ pic.image_large.url }}"
+                               data-origurl="{{ request.scheme }}://{{ request.get_host }}{{ pic.image.url }}"
+                               class="thumbnail" data-toggle="modal"
+                               data-target="#findingImageModal" id="finding_pic">
+                                <img src="{{ request.scheme }}://{{ request.get_host }}{{ pic.image_thumbnail.url }}">
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="panel-footer">
+                    <i title="Click on thumbnail to magnify."
+                       class="text-info fa fa-search"></i>
+                    <small>Click on thumbnail to magnify.</small>
+                </div>
+            </div>
+        {% endif %}
+        <div class="modal fade" id="findingImageModal" tabindex="-1" role="dialog"
+             aria-labelledby="findingImageModalLabel">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="pull-left">Finding Images</h4>
+                        <button type="button" class="pull-right btn btn-xs btn-default" data-dismiss="modal"><span
+                                class="fa fa-close"></span></button>
+                    </div>
+                    <div class="modal-body">
+                        <a id="a_to_replace" class="modal_finding_pic" href="{{ pic.image.url }}" target="_blank" title="View original image.">
+                            <img id="to_replace" src="{{ pic.image_large.url }}" class="img-responsive"/>
+                        </a>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="#" id="next" class="btn btn-default bnt-xs pull-right"><span
+                                class="fa fa-arrow-right"></span></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="panel panel-default">
             <div class="panel-heading">
                 <h4>Mitigation <span class="pull-right"><a data-toggle="collapse" href="#vuln_mitigation"><i
-                                class="glyphicon glyphicon-chevron-up"></i></a></span></h4>
+                        class="glyphicon glyphicon-chevron-up"></i></a></span></h4>
             </div>
             <div id="vuln_mitigation" class="panel-body collapse in">
                 <pre>{{ finding.mitigation }}</pre>
@@ -198,7 +280,7 @@
                         <div class="panel panel-default">
                             <div class="panel-heading">
                                 <h4>Request #{{ forloop.counter }}<span class="pull-right">
-                                    <a data-toggle="collapse"  href="#vuln_req_{{ forloop.counter }}">
+                                    <a data-toggle="collapse" href="#vuln_req_{{ forloop.counter }}">
                                         <i class="glyphicon glyphicon-chevron-down"></i></a></span></h4>
                             </div>
                             <div id="vuln_req_{{ forloop.counter }}" class="panel-body collapse">
@@ -208,7 +290,7 @@
                         <div class="panel panel-default">
                             <div class="panel-heading">
                                 <h4>Response #{{ forloop.counter }}<span class="pull-right">
-                                    <a data-toggle="collapse"  href="#vuln_res_{{ forloop.counter }}">
+                                    <a data-toggle="collapse" href="#vuln_res_{{ forloop.counter }}">
                                         <i class="glyphicon glyphicon-chevron-down"></i></a></span></h4>
                             </div>
 
@@ -223,7 +305,7 @@
         <div class="panel panel-default">
             <div class="panel-heading">
                 <h4>Impact <span class="pull-right"><a data-toggle="collapse" href="#vuln_impact"><i
-                                class="glyphicon glyphicon-chevron-up"></i></a></span></h4>
+                        class="glyphicon glyphicon-chevron-up"></i></a></span></h4>
             </div>
             <div id="vuln_impact" class="panel-body collapse in">
                 <pre>{{ finding.impact }}</pre>
@@ -232,7 +314,7 @@
         <div class="panel panel-default">
             <div class="panel-heading">
                 <h4>References <span class="pull-right"><a data-toggle="collapse" href="#vuln_refs"><i
-                                class="glyphicon glyphicon-chevron-up"></i></a></span></h4>
+                        class="glyphicon glyphicon-chevron-up"></i></a></span></h4>
             </div>
             <div id="vuln_refs" class="panel-body collapse in">
                 <pre>{{ finding.references }}</pre>
@@ -245,7 +327,7 @@
     <div class="panel panel-default to_highlight table-responsive">
         <div class="panel-heading">
             <h4>Notes <span class="pull-right"><a data-toggle="collapse" href="#vuln_notes"><i
-                                class="glyphicon glyphicon-chevron-up"></i></a></span></h4>
+                    class="glyphicon glyphicon-chevron-up"></i></a></span></h4>
         </div>
         <div id="vuln_notes" class="panel-body collapse in">
             {% if notes %}
@@ -269,7 +351,10 @@
                             <td>
                                 {{ note }}
                                 {% ifequal user.username note.author.username %}
-                                    <a href="{% url 'delete_finding_note' finding.id note.id %}"> [X] </a>
+                                    <a href="{% url 'delete_finding_note' finding.id note.id %}"
+                                       class="btn btn-danger btn-xs" title="Delete">
+                                        <i class="fa fa-trash" aria-hidden="true"></i>
+                                    </a>
                                 {% endifequal %}
                             </td>
                         </tr>
@@ -293,7 +378,6 @@
     </div>
 {% endblock %}
 {% block postscript %}
-    <script type="text/javascript" src="{% static "jquery-cookie/jquery.cookie.js" %}"></script>
     <script type="text/javascript" src="{% static "jquery-highlight/jquery.highlight.js" %}"></script>
     <script type="text/javascript">
         if (document.referrer.indexOf('simple_search') > 0) {
@@ -309,13 +393,40 @@
             $('input#simple_search').val(terms);
         }
 
-        $(document).ready(function(){
-            $("a[data-toggle='collapse']").on('click', function(){
+        $(document).ready(function () {
+            $("a[data-toggle='collapse']").on('click', function () {
                 var i = $($(this).find('i').get(0));
                 i.toggleClass('glyphicon-chevron-up').toggleClass('glyphicon-chevron-down');
             })
         });
 
+        $('#findingImageModal').on('show.bs.modal', function (event) {
+            var link = $(event.relatedTarget);
+            var loc = link.data('imageurl')
+            var loco = link.data('origurl')
+            console.log(link);
+            console.log(loc);
+            var modal = $(this);
+            modal.find('#to_replace').attr('src', loc);
+            modal.find('#a_to_replace').attr('href', loco);
+        });
+        $("a#next").on('click', function (e) {
+            e.preventDefault();
+            var showing = $("img#to_replace").attr('src');
+            var thumbnails = $('a.thumbnail');
 
+            thumbnails.each(function (index) {
+                if ($(this).data('imageurl') == showing) {
+                    console.log(index, thumbnails.length)
+                    if (index == thumbnails.length - 1) {
+                        // at the end
+                        $("img#to_replace").attr('src', $(thumbnails[0]).data('imageurl'));
+                    }
+                    else {
+                        $("img#to_replace").attr('src', $(thumbnails[index + 1]).data('imageurl'));
+                    }
+                }
+            });
+        });
     </script>
 {% endblock %}

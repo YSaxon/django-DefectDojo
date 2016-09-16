@@ -900,21 +900,22 @@ div.custom-search-form {
     margin-right: 25px;
 }
 
-.report-filter-set{
+.report-filter-set {
     padding-left: 10px;
 }
-.report-filter-set .form-group{
+
+.report-filter-set .form-group {
     display: inline-block;
     margin-bottom: 10px;
     vertical-align: middle;
     margin-right: 25px;
 }
 
-.finding-list .panel-body, .finding-list table{
+.finding-list .panel-body, .finding-list table {
     font-size: .95em !important;
 }
 
-  .dojo-filter-set.form-inline select[multiple=multiple] {
+.dojo-filter-set.form-inline select[multiple=multiple] {
     width: 200px;
 }
 
@@ -1008,7 +1009,7 @@ div.potential-finding, div.potential-finding div.panel-heading {
 }
 
 a.template-popover:hover {
-    cursor: zoom-in;
+    cursor: url(../img/zoom-in.cur), zoom-in;
 }
 
 #template_findings div.popover {
@@ -1110,3 +1111,18 @@ hr.report-page-break:before {
     padding: 2px 10px;
 }
 
+div.tags .label {
+    font-size: 90%;
+    display: inline-block;
+    padding: .6em .3em;
+}
+
+@media (min-width: 768px) {
+    #findingImageModal .modal-dialog {
+        width: 50%;
+    }
+}
+
+#finding_pic, .modal_finding_pic:hover {
+    cursor: url(../img/zoom-in.cur), zoom-in;
+}

@@ -9,7 +9,7 @@ LOGIN_REDIRECT_URL = '/'
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
 TEST_RUNNER = 'django.test.runner.DiscoverRunner'
-VERSION = '1.0.5'
+ENABLE_DEDUPLICATION = False
 
 # Uncomment this line if you enable SSL
 # SESSION_COOKIE_SECURE = True
@@ -31,9 +31,9 @@ DATABASES = {
         # The following settings are not used with sqlite3:
         'USER': 'MYSQLUSER',
         'PASSWORD': 'MYSQLPWD',
-        'HOST': 'localhost',       # Empty for localhost through domain sockets
+        'HOST': 'MYSQLHOST',       # Empty for localhost through domain sockets
                                    # or '127.0.0.1' for localhost through TCP.
-        'PORT': '3306',           # Set to empty string for default.
+        'PORT': 'MYSQLPORT',           # Set to empty string for default.
     }
 }
 
@@ -83,6 +83,9 @@ STATIC_ROOT = "DOJO_STATIC_ROOT"
 # Example: "http://example.com/static/", "http://static.example.com/"
 STATIC_URL = '/static/'
 
+# Move DOJO into a subdirectory (optional)
+URL_PREFIX = ''
+
 # Additional locations of static files
 STATICFILES_DIRS = (
     # Put strings here, like "/home/html/static" or "C:/www/django/static".
@@ -108,7 +111,7 @@ BOWER_COMPONENTS_ROOT = 'BOWERDIR'
 # what components should be installed
 BOWER_INSTALLED_APPS = (
     'fontawesome',
-    'startbootstrap-sb-admin-2',
+    'https://github.com/BlackrockDigital/startbootstrap-sb-admin-2.git',
     'fullcalendar',
     'jquery-cookie',
     'jquery-ui',
@@ -163,6 +166,7 @@ LOGIN_EXEMPT_URLS = (
     r'^api/v1/',
     r'^ajax/v1/',
     r'^reports/cover$',
+    r'^finding/image/(?P<token>[^/]+)$'
 )
 
 # Python dotted path to the WSGI application used by Django's runserver.
@@ -193,6 +197,9 @@ INSTALLED_APPS = (
     'dojo',
     'tastypie_swagger',
     'watson',
+    'tagging',
+    'custom_field',
+    'imagekit',
 )
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -220,6 +227,11 @@ CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
 
 # wkhtmltopdf settings
 WKHTMLTOPDF_PATH = '/usr/local/bin/wkhtmltopdf'
+
+# django-tagging settings
+FORCE_LOWERCASE_TAGS = True
+MAX_TAG_LENGTH = 25
+
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to

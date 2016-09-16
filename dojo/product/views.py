@@ -13,12 +13,14 @@ from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
+from django.contrib.contenttypes.models import ContentType
 from pytz import timezone
 
 from dojo.filters import ProductFilter, ProductFindingFilter
-from dojo.forms import ProductForm, EngForm, DeleteProductForm
+from dojo.forms import ProductForm, EngForm, DeleteProductForm, ProductMetaDataForm
 from dojo.models import Product_Type, Finding, Product, Engagement, ScanSettings, Risk_Acceptance, Test
 from dojo.utils import get_page_items, add_breadcrumb, get_punchcard_data
+from custom_field.models import CustomFieldValue, CustomField
 
 localtz = timezone(settings.TIME_ZONE)
 
@@ -76,6 +78,15 @@ def view_product(request, pid):
     if not auth:
         # will render 403
         raise PermissionDenied
+
+    ct = ContentType.objects.get_for_model(prod)
+    product_cf = CustomField.objects.filter(content_type=ct)
+    product_metadata = {}
+
+    for cf in product_cf:
+        cfv = CustomFieldValue.objects.filter(field=cf, object_id=prod.id)
+        if len(cfv):
+            product_metadata[cf.name] = cfv[0].value
 
     try:
         start_date = Finding.objects.filter(product=prod).order_by('date')[:1][0].date
@@ -215,6 +226,7 @@ def view_product(request, pid):
     return render(request,
                   'dojo/view_product.html',
                   {'prod': prod,
+                   'product_metadata': product_metadata,
                    'engs': engs,
                    'i_engs': i_engs,
                    'scan_sets': scan_sets,
@@ -243,6 +255,8 @@ def new_product(request):
         form = ProductForm(request.POST)
         if form.is_valid():
             product = form.save()
+            tags = form.cleaned_data['tags']
+            product.tags = tags
             messages.add_message(request,
                                  messages.SUCCESS,
                                  'Product added successfully.',
@@ -262,6 +276,8 @@ def edit_product(request, pid):
         form = ProductForm(request.POST, instance=prod)
         if form.is_valid():
             form.save()
+            tags = form.cleaned_data['tags']
+            prod.tags = tags
             messages.add_message(request,
                                  messages.SUCCESS,
                                  'Product updated successfully.',
@@ -270,7 +286,7 @@ def edit_product(request, pid):
     else:
         form = ProductForm(instance=prod,
                            initial={'auth_users': prod.authorized_users.all()})
-
+        form.initial['tags'] = ", ".join([tag.name for tag in prod.tags])
     add_breadcrumb(parent=prod, title="Edit", top_level=False, request=request)
 
     return render(request,
@@ -296,6 +312,8 @@ def delete_product(request, pid):
         if 'id' in request.POST and str(product.id) == request.POST['id']:
             form = DeleteProductForm(request.POST, instance=product)
             if form.is_valid():
+                if product.tags:
+                    del product.tags
                 product.delete()
                 messages.add_message(request,
                                      messages.SUCCESS,
@@ -366,4 +384,80 @@ def new_eng_for_app(request, pid):
 
     return render(request, 'dojo/new_eng.html',
                   {'form': form, 'pid': pid,
+                   })
+
+
+@user_passes_test(lambda u: u.is_staff)
+def add_meta_data(request, pid):
+    prod = Product.objects.get(id=pid)
+    ct = ContentType.objects.get_for_model(prod)
+    if request.method == 'POST':
+        form = ProductMetaDataForm(request.POST)
+        if form.is_valid():
+            cf, created = CustomField.objects.get_or_create(name=form.cleaned_data['name'],
+                                                   content_type=ct,
+                                                   field_type='a')
+            cf.save()
+            cfv, created = CustomFieldValue.objects.get_or_create(field=cf,
+                                                         object_id=prod.id)
+            cfv.value = form.cleaned_data['value']
+            cfv.clean()
+            cfv.save()
+            messages.add_message(request,
+                                 messages.SUCCESS,
+                                 'Metadata added successfully.',
+                                 extra_tags='alert-success')
+            if 'add_another' in request.POST:
+                return HttpResponseRedirect(reverse('add_meta_data', args=(pid,)))
+            else:
+                return HttpResponseRedirect(reverse('view_product', args=(pid,)))
+    else:
+        form = ProductMetaDataForm(initial={'content_type': prod})
+
+    add_breadcrumb(parent=prod, title="Add Metadata", top_level=False, request=request)
+
+    return render(request,
+                  'dojo/add_product_meta_data.html',
+                  {'form': form,
+                   'product': prod,
+                   })
+
+
+@user_passes_test(lambda u: u.is_staff)
+def edit_meta_data(request, pid):
+    prod = Product.objects.get(id=pid)
+    ct = ContentType.objects.get_for_model(prod)
+
+    product_cf = CustomField.objects.filter(content_type=ct)
+    product_metadata = {}
+
+    for cf in product_cf:
+        cfv = CustomFieldValue.objects.filter(field=cf, object_id=prod.id)
+        if len(cfv):
+            product_metadata[cf] = cfv[0]
+
+    if request.method == 'POST':
+        for key, value in request.POST.iteritems():
+            if key.startswith('cfv_'):
+                cfv_id = int(key.split('_')[1])
+                cfv = get_object_or_404(CustomFieldValue, id=cfv_id)
+
+                value = value.strip()
+                if value:
+                    cfv.value = value
+                    cfv.save()
+                else:
+                    cfv.delete()
+        messages.add_message(request,
+                             messages.SUCCESS,
+                             'Metadata edited successfully.',
+                             extra_tags='alert-success')
+        return HttpResponseRedirect(reverse('view_product', args=(pid,)))
+
+    add_breadcrumb(parent=prod, title="Edit Metadata", top_level=False, request=request)
+
+    return render(request,
+                  'dojo/edit_product_meta_data.html',
+                  {'product': prod,
+                   'product_metadata': product_metadata,
                    })
