@@ -10,7 +10,7 @@ from tastypie.serializers import Serializer
 from tastypie.validation import CleanedDataFormValidation
 
 from dojo.models import Product, Engagement, Test, Finding, \
-    User, ScanSettings, IPScan, Scan, Stub_Finding, Risk_Acceptance
+    User, ScanSettings, IPScan, Scan, Stub_Finding, Risk_Acceptance,FileUpload
 from dojo.forms import ProductForm, EngForm2, TestForm, \
     ScanSettingsForm, FindingForm, StubFindingForm
 
@@ -386,6 +386,198 @@ class TestResource(BaseModelResource):
         bundle.data['test_type'] = bundle.obj.test_type
         return bundle
 
+"""
+		TODO change url and make sure it's registered
+    /api/v1/tests/
+    GET [/id/], DELETE [/id/]
+    Expects: no params or engagement_id
+    Returns test: ALL or by engagement_id
+    Relevant apply filter ?test_type=?, ?id=?
+
+    POST, PUT [/id/]
+    Expects *test_type, *engagement, *target_start, *target_end,
+    estimated_time, actual_time, percent_complete, notes
+"""
+
+
+'''class ScanUploadResource(BaseModelResource):
+    engagement = fields.ForeignKey(EngagementResource, 'engagement',
+                                   full=False, null=False)
+
+    class Meta:
+        resource_name = 'tests'#change this to scanimport?
+        list_allowed_methods = ['get', 'post']
+        # disabled delete. Should not be allowed without fine authorization.
+        detail_allowed_methods = ['get', 'post', 'put']
+        queryset = Test.objects.all().order_by('target_end')
+        include_resource_uri = True
+        filtering = {
+            'id': ALL,
+            'test_type': ALL,
+            'target_start': ALL,
+            'target_end': ALL,
+            'notes': ALL,
+            'percent_complete': ALL,
+            'actual_time': ALL,
+            'engagement': ALL,
+        }
+        authentication = DojoApiKeyAuthentication()
+        authorization = DjangoAuthorization()
+        serializer = Serializer(formats=['json'])
+        validation = CleanedDataFormValidation(form_class=TestForm)
+
+    def dehydrate(self, bundle):
+        bundle.data['test_type'] = bundle.obj.test_type
+        return bundle
+'''
+
+def upload_view(request):
+    from django.http import HttpResponse
+    print "uploadview1"
+    if request.method != 'POST':
+        return HttpResponse("notpost")
+        #return http.HttpResponseBadRequest()
+        
+    print "uploadview2"
+    #resource = resources.UploadedFileResource()
+
+    # TODO: Provide some user feedback while uploading
+    filename="none"
+    uploaded_files = []
+    for field, files in request.FILES.iterlists():
+        print "uploadview3"
+        for file in files:
+            # We let storage decide a name
+            import os,binascii
+            filename=binascii.b2a_hex(os.urandom(15))
+            print filename
+            fileobject = storage.default_storage.save(filename, file)
+            uploaded_files.append(filename)
+            '''
+            uploaded_file = api_models.UploadedFile()
+            uploaded_file.author = request.user
+            uploaded_file.filename = filename
+            uploaded_file.content_type = file.content_type
+            uploaded_file.save()
+            uploaded_files.append({
+                'filename': filename,
+                'resource_uri': resource.get_resource_uri(uploaded_file)
+            })'''
+    # TODO: Create background task to process uploaded file (check content type (both in GridFS file and UploadedFile document), resize images)
+
+    return HttpResponse(filename)#resource.create_response(request, uploaded_files, response_class=tastypie_http.HttpAccepted)
+
+class MultipartResource(object):
+    def deserialize(self, request, data, format=None):
+        print "0!"
+        if not format:
+            format = request.META.get('CONTENT_TYPE', 'application/json')
+            print "1!"
+        if format == 'application/x-www-form-urlencoded':
+            print "2!"
+            return request.POST
+        if format.startswith('multipart'):
+            print "3!"
+            data = request.POST.copy()
+            data.update(request.FILES)
+            return data
+        return super(MultipartResource, self).deserialize(request, data, format)
+    
+import base64
+import os
+from tastypie.fields import FileField
+from django.core.files.uploadedfile import SimpleUploadedFile
+import mimetypes
+
+class Base64FileField(FileField):
+    """
+    A django-tastypie field for handling file-uploads through raw post data.
+    It uses base64 for en-/decoding the contents of the file.
+    Usage:
+    class MyResource(ModelResource):
+        file_field = Base64FileField("file_field")
+        
+        class Meta:
+            queryset = ModelWithFileField.objects.all()
+    In the case of multipart for submission, it would also pass the filename.
+    By using a raw post data stream, we have to pass the filename within our
+    file_field structure:
+    file_field = {
+        "name": "myfile.png",
+        "file": "longbas64encodedstring",
+        "content_type": "image/png" # on hydrate optional
+    }
+    """
+    def dehydrate(self, bundle, for_list):
+        if not bundle.data.has_key(self.instance_name) and hasattr(bundle.obj, self.instance_name):
+            file_field = getattr(bundle.obj, self.instance_name)
+            if file_field:
+                try:
+                    content_type, encoding = mimetypes.guess_type(file_field.file.name)
+                    b64 = open(file_field.file.name, "rb").read().encode("base64")
+                    ret = {
+                        "name": os.path.basename(file_field.file.name),
+                        "file": b64,
+                        "content-type": content_type or "application/octet-stream"
+                    }
+                    return ret
+                except:
+                    pass
+        return None
+
+    def hydrate(self, obj):
+        print "hydrate"
+        value = super(FileField, self).hydrate(obj)
+        if value:
+            print "value"
+            value = SimpleUploadedFile(value["name"], base64.b64decode(value["file"]), getattr(value, "content_type", "application/octet-stream"))
+            from pprint import pprint
+            #pprint (vars(value))
+            from dojo.utils import handle_uploaded_threat
+            #handle_uploaded_threat(value,Engagement.objects.get(id=1))
+            #pprint (vars(value.file))
+            #pprint (vars(value['file']))
+            #mport IPython; IPython.embed()
+        return value
+
+class ThreatUploadResource(ModelResource):#MultipartResource,
+    #file = Base64FileField("file")
+    #date = DateField("date")
+    print "threatuploadbeforemeta"
+    class Meta:
+        resource_name = 'threat_upload'
+        list_allowed_methods = ['post']
+        detail_allowed_methods = []
+        #file_field = Base64FileField("file")
+        #print file_field
+        #print "success"
+        #queryset = FileUpload.objects.all()
+        #print request
+    def obj_create(self, bundle, **kwargs):
+        from pprint import pprint
+        pprint (vars(bundle))
+        value = bundle.data['file']
+        id = bundle.data['id']
+        file = SimpleUploadedFile(value["name"], base64.b64decode(value["file"]), getattr(value, "content_type", "application/octet-stream"))
+        #print file
+        from dojo.utils import handle_uploaded_threat
+        handle_uploaded_threat(file,Engagement.objects.get(id=id))
+        #print bundle['data']
+        #pprint (vars(bundle.data))
+        #SimpleUploadedFile(value["name"], base64.b64decode(value["file"]), getattr(value, "content_type", "application/octet-stream"))
+        #from dojo.utils import handle_uploaded_threat
+        #handle_uploaded_threat(bundle,Engagement.objects.get(id=1))
+        
+        
+
+'''class ThreatUploadResource(BaseModelResource):
+    class Meta:
+        resource_name = 'threat_upload'
+        allowed_methods = ['get']
+        #detail_allowed_methods = ['get','post','put']
+        queryset = Engagement.objects.all().filter(threat_model=True)#.values('tmodel_path')
+        fields=['tmodel_path']
+'''
 
 class RiskAcceptanceResource(BaseModelResource):
     class Meta:
