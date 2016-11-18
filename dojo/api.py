@@ -5,7 +5,7 @@ from tastypie.authorization import Authorization
 from tastypie.authorization import DjangoAuthorization
 from tastypie.constants import ALL, ALL_WITH_RELATIONS
 from tastypie.exceptions import Unauthorized
-from tastypie.resources import ModelResource
+from tastypie.resources import ModelResource,Resource
 from tastypie.serializers import Serializer
 from tastypie.validation import CleanedDataFormValidation
 
@@ -540,7 +540,7 @@ class Base64FileField(FileField):
             #mport IPython; IPython.embed()
         return value
 
-class ThreatUploadResource(ModelResource):#MultipartResource,
+class ThreatUploadResource(Resource):#MultipartResource,
     #file = Base64FileField("file")
     #date = DateField("date")
     print "threatuploadbeforemeta"
@@ -548,6 +548,8 @@ class ThreatUploadResource(ModelResource):#MultipartResource,
         resource_name = 'threat_upload'
         list_allowed_methods = ['post']
         detail_allowed_methods = []
+        authentication = DojoApiKeyAuthentication()
+        authorization = DjangoAuthorization()
         #file_field = Base64FileField("file")
         #print file_field
         #print "success"
