@@ -469,21 +469,7 @@ def upload_view(request):
 
     return HttpResponse(filename)#resource.create_response(request, uploaded_files, response_class=tastypie_http.HttpAccepted)
 
-class MultipartResource(object):
-    def deserialize(self, request, data, format=None):
-        print "0!"
-        if not format:
-            format = request.META.get('CONTENT_TYPE', 'application/json')
-            print "1!"
-        if format == 'application/x-www-form-urlencoded':
-            print "2!"
-            return request.POST
-        if format.startswith('multipart'):
-            print "3!"
-            data = request.POST.copy()
-            data.update(request.FILES)
-            return data
-        return super(MultipartResource, self).deserialize(request, data, format)
+
     
 import base64
 import os
@@ -574,59 +560,71 @@ class Base64FileField(FileField):
             #mport IPython; IPython.embed()
         return value
 
-
+class MultipartResource(object):
+    def deserialize(self, request, data, format=None):
+        print "0!"
+        if not format:
+            format = request.META.get('CONTENT_TYPE', 'application/json')
+            print "1!"
+        if format == 'application/x-www-form-urlencoded':
+            print "2!"
+            return request.POST
+        if format.startswith('multipart'):
+            print "3!"
+            data = request.POST.copy()
+            data.update(request.FILES)
+            import pprint; pprint.pprint(data)
+            print"+++"
+            #data.update(data['json'])
+            #maybe try super(MultipartResource, self).deserialize(request, data, format)
+            return data
+        return super(MultipartResource, self).deserialize(request, data, format)
 
 from dojo.forms import ImportScanForm
 from dojo.forms import SEVERITY_CHOICES
 from django.shortcuts import render, get_object_or_404
 from dojo.engagement.views import import_scan_results_logic
+#from dojo.test.views import re_import_scan_results_logic
 class ScanUploadResource(Resource):#MultipartResource,
-    #file = Base64FileField(attribute="file",help_text="""A JSON like file_field = {
-    #    "name": "myfile.png",
-    #    "file": "longbas64encodedstring",
-    #    "content_type": "image/png" # on hydrate optional
-    #}""",blank=False,default="BLAH")
-    eid= fields.IntegerField(attribute="eid",help_text="id of the engagement this scan is to be added to")#,blank=False)
+    id= fields.IntegerField(attribute="id",help_text="test id of the scan this is to replace",use_in="detail")#
+    eid= fields.IntegerField(attribute="eid",help_text="id of the engagement this scan is to be added to")#,use_in='list')#,blank=False)
     file = fields.FileField(attribute="file",help_text="a base64 encoded string of the file to be uploaded")#,blank=False)
-    tags = fields.CharField(attribute="tags",help_text="a list of tags seperated by commas")#,default="testtag",blank=True)
-    verified= fields.BooleanField(attribute="verified",help_text="Select if these findings findings have been verified.",blank=True)
-    active= fields.BooleanField(attribute="active",help_text="Select if these findings are currently active.",blank=True)
+    tags = fields.CharField(attribute="tags",help_text="a list of tags seperated by commas",use_in='list')#,default="testtag",blank=True)
+    verified= fields.BooleanField(attribute="verified",help_text="Select if these findings findings have been verified.",blank=True,use_in="list")
+    active= fields.BooleanField(attribute="active",help_text="Select if these findings are currently active.",blank=True,use_in="list")
     scan_date = fields.DateField(attribute="scan_date", help_text="Scan completion date will be used on all findings.")#,blank=False)#default=dojo.models.get_current_date)
-    scan_type = fields.CharField(attribute="scan_type",help_text="scan type, one of: %s" % ', '.join(['%s (%s)' % (t[0], t[1]) for t in ImportScanForm.SCAN_TYPE_CHOICES]))
+    scan_type = fields.CharField(attribute="scan_type",help_text="scan type, one of: %s" % ', '.join(['%s (%s)' % (t[0], t[1]) for t in ImportScanForm.SCAN_TYPE_CHOICES]),use_in="list")
     minimum_severity= fields.CharField(attribute="minimum_severity",help_text="minimum severity level to upload, one of: %s" % ', '.join(['%s (%s)' % (t[0], t[1]) for t in SEVERITY_CHOICES]))
     print "scanuploadbeforemeta"
     class Meta:
         resource_name = 'scan_upload'
         list_allowed_methods = ['post']
-        detail_allowed_methods = []
+        detail_allowed_methods = ['put']
         authentication = DojoApiKeyAuthentication()
         authorization = DjangoAuthorization()
-        #file_field = Base64FileField("file")
-        #print file_field
-        #print "success"
-        #queryset = FileUpload.objects.all()
-        #print request
     def obj_create(self, bundle, **kwargs):
-        from pprint import pprint
-        #pprint (vars(bundle))
-        
-        #id = bundle.data['id']
-        #value = bundle.data['file']
-        #file = SimpleUploadedFile(value["name"], base64.b64decode(value["file"]), getattr(value, "content_type", "application/octet-stream"))
-        
         dictToPass=bundle.data
+        import pprint; pprint.pprint (dictToPass)
+        pprint.pprint (bundle.request.FILES)
         if not 'tags' in dictToPass: dictToPass['tags']="notags-defaultval"
         if not 'verified' in dictToPass: dictToPass['verified']=False
         if not 'active' in dictToPass: dictToPass['active']=False
         if not 'minimum_severity' in dictToPass: dictToPass['minimum_severity']="Info"
-        if not 'eid ' in dictToPass: raise Http404()
-        if not 'scan_type ' in dictToPass: raise Http404()
+        if not 'eid' in dictToPass: print "noeid"#raise Http404()
+        if not 'scan_type' in dictToPass: raise Http404()
         #if not 'scan_date' in dictToPass:dictToPass['scan_date']=
         dictToPass['file'] = SimpleUploadedFile("scanfile", base64.b64decode(bundle.data['file']), "application/octet-stream")
         dictToPass['request']=bundle.request
         import_scan_results_logic(dictToPass)
-        #engagement = get_object_or_404(Engagement, id=bundle.data['eid'])
-        #if not any(scan_type in code for code in ImportScanForm.SCAN_TYPE_CHOICES):
+    def obj_update(self, bundle, **kwargs):
+        dictToPass=bundle.data
+        if not 'minimum_severity' in dictToPass: dictToPass['minimum_severity']="Info"
+        if not 'id ' in dictToPass: raise Http404()
+        #if not 'scan_date' in dictToPass:dictToPass['scan_date']=
+        dictToPass['file'] = SimpleUploadedFile("scanfile", base64.b64decode(bundle.data['file']), "application/octet-stream")
+        dictToPass['request']=bundle.request
+        #re_import_scan_results_logic(dictToPass)
+
         
 
         
