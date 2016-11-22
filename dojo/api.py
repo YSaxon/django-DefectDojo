@@ -602,40 +602,7 @@ class ScanUploadResource(BaseModelResource):#MultipartResource,#TODO maybe fix t
         detail_allowed_methods = []
         authentication = DojoApiKeyAuthentication()
         authorization = DjangoAuthorization()
-        extra_actions = [
-                {
-                    "name": "Upload",
-                    "http_method": "POST",
-                    "resource_type": "list",
-                    "description": "Upload Scan",
-                    "fields": {
-                        "eid": {
-                            "type": "integer",
-                            "required": True,
-                            "description": "id of the engagement this scan is to be added to"
-                        },
-                        "file": {
-                            "type": "string",
-                            "required": True,
-                            "description": "a base64 encoded string of the file to be uploaded"
-                        },
-                        "scan_date": {
-                            "type": "date",
-                            "required": True,
-                            "description": "date to be applied to all findings."
-                        },
-                        "scan_type": {
-                            "type": "date",
-                            "required": True,
-                            "description": "scan type, one of: %s" % ', '.join(['%s (%s)' % (t[0], t[1]) for t in ImportScanForm.SCAN_TYPE_CHOICES])
-                        },
-                        "active": {
-                            "type": "boolean",
-                            "required": False,
-                            "description": "Select if these findings are currently active. Defaults to true"#TODO true?
-                        }
-                    }
-                }]
+        
     def obj_create(self, bundle, **kwargs):
         dictToPass=bundle.data
         #import pprint; pprint.pprint (dictToPass)
