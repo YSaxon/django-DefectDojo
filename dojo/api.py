@@ -585,7 +585,7 @@ from dojo.forms import SEVERITY_CHOICES
 from django.shortcuts import render, get_object_or_404
 from dojo.engagement.views import import_scan_results_logic
 #from dojo.test.views import re_import_scan_results_logic
-class ScanUploadResource(Resource):#MultipartResource,
+class ScanUploadResource(BaseModelResource):#MultipartResource,#TODO maybe fix the deserializer for multipart
     id= fields.IntegerField(attribute="id",help_text="test id of the scan this is to replace",use_in="detail")#
     eid= fields.IntegerField(attribute="eid",help_text="id of the engagement this scan is to be added to")#,use_in='list')#,blank=False)
     file = fields.FileField(attribute="file",help_text="a base64 encoded string of the file to be uploaded")#,blank=False)
@@ -598,29 +598,63 @@ class ScanUploadResource(Resource):#MultipartResource,
     print "scanuploadbeforemeta"
     class Meta:
         resource_name = 'scan_upload'
-        list_allowed_methods = ['post']
-        detail_allowed_methods = ['put']
+        list_allowed_methods = []
+        detail_allowed_methods = []
         authentication = DojoApiKeyAuthentication()
         authorization = DjangoAuthorization()
+        extra_actions = [
+                {
+                    "name": "Upload",
+                    "http_method": "POST",
+                    "resource_type": "list",
+                    "description": "Upload Scan",
+                    "fields": {
+                        "eid": {
+                            "type": "integer",
+                            "required": True,
+                            "description": "id of the engagement this scan is to be added to"
+                        },
+                        "file": {
+                            "type": "string",
+                            "required": True,
+                            "description": "a base64 encoded string of the file to be uploaded"
+                        },
+                        "scan_date": {
+                            "type": "date",
+                            "required": True,
+                            "description": "date to be applied to all findings."
+                        },
+                        "scan_type": {
+                            "type": "date",
+                            "required": True,
+                            "description": "scan type, one of: %s" % ', '.join(['%s (%s)' % (t[0], t[1]) for t in ImportScanForm.SCAN_TYPE_CHOICES])
+                        },
+                        "active": {
+                            "type": "boolean",
+                            "required": False,
+                            "description": "Select if these findings are currently active. Defaults to true"#TODO true?
+                        }
+                    }
+                }]
     def obj_create(self, bundle, **kwargs):
         dictToPass=bundle.data
-        import pprint; pprint.pprint (dictToPass)
+        #import pprint; pprint.pprint (dictToPass)
         pprint.pprint (bundle.request.FILES)
         if not 'tags' in dictToPass: dictToPass['tags']="notags-defaultval"
         if not 'verified' in dictToPass: dictToPass['verified']=False
         if not 'active' in dictToPass: dictToPass['active']=False
         if not 'minimum_severity' in dictToPass: dictToPass['minimum_severity']="Info"
-        if not 'eid' in dictToPass: print "noeid"#raise Http404()
+        if not 'eid' in dictToPass: print "noeid"#raise Http404()  #TODO fix 404
         if not 'scan_type' in dictToPass: raise Http404()
-        #if not 'scan_date' in dictToPass:dictToPass['scan_date']=
+        #if not 'scan_date' in dictToPass:dictToPass['scan_date']= TODO add a default date or something
         dictToPass['file'] = SimpleUploadedFile("scanfile", base64.b64decode(bundle.data['file']), "application/octet-stream")
         dictToPass['request']=bundle.request
         import_scan_results_logic(dictToPass)
     def obj_update(self, bundle, **kwargs):
         dictToPass=bundle.data
         if not 'minimum_severity' in dictToPass: dictToPass['minimum_severity']="Info"
-        if not 'id ' in dictToPass: raise Http404()
-        #if not 'scan_date' in dictToPass:dictToPass['scan_date']=
+        if not 'id' in dictToPass: raise Http404()
+        #if not 'scan_date' in dictToPass:dictToPass['scan_date']=TODO default date
         dictToPass['file'] = SimpleUploadedFile("scanfile", base64.b64decode(bundle.data['file']), "application/octet-stream")
         dictToPass['request']=bundle.request
         #re_import_scan_results_logic(dictToPass)
