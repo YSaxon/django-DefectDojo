@@ -493,7 +493,7 @@ def re_import_scan_results(request, tid):
             dictToPass['file']=request.FILES['file']
             dictToPass['tid']=tid
             dictToPass['request']=request
-            dictToPass['user']=request.user
+            dictToPass['user']=request.user#maybe will solve AttributeError: 'dict' object has no attribute 'user'
             re_import_scan_results(dictToPass)
     add_breadcrumb(parent=t, title="Re-upload a %s" % scan_type, top_level=False, request=request)
     return render(request,
