@@ -232,99 +232,109 @@ def add_tests(request, eid):
     return render(request, 'dojo/add_tests.html',
                   {'form': form, 'eid': eid})
 
+def import_scan_results_logic(bundle):
+    finding_count = 0
+    engagement = get_object_or_404(Engagement, id=bundle['eid'])
+    file = bundle['file']
+    scan_date = bundle['scan_date']
+    min_sev = bundle['minimum_severity']
+    active = bundle['active']
+    verified = bundle['verified']
+    request = bundle['request']
+
+    scan_type = bundle['scan_type']
+    if not any(scan_type in code for code in ImportScanForm.SCAN_TYPE_CHOICES):
+        raise Http404()
+
+    tt, t_created = Test_Type.objects.get_or_create(name=scan_type)
+    # will save in development environment
+    environment, env_created = Development_Environment.objects.get_or_create(name="Development")
+    t = Test(engagement=engagement, test_type=tt, target_start=scan_date,
+             target_end=scan_date, environment=environment, percent_complete=100)
+    t.full_clean()
+    t.save()
+    t.tags = bundle['tags']
+
+    try:
+        parser = import_parser_factory(file, t)
+    except ValueError:
+        raise Http404()
+
+    try:
+        for item in parser.items:
+            sev = item.severity
+            if sev == 'Information' or sev == 'Informational':
+                sev = 'Info'
+
+            item.severity = sev
+
+            if Finding.SEVERITIES[sev] > Finding.SEVERITIES[min_sev]:
+                continue
+
+            item.test = t
+            item.date = t.target_start
+            item.reporter = request.user
+            item.last_reviewed = datetime.now(tz=localtz)
+            item.last_reviewed_by = request.user
+            item.active = active
+            item.verified = verified
+            item.save()
+
+            if hasattr(item, 'unsaved_req_resp') and len(item.unsaved_req_resp) > 0:
+                for req_resp in item.unsaved_req_resp:
+                    burp_rr = BurpRawRequestResponse(finding=item,
+                                                     burpRequestBase64=req_resp["req"],
+                                                     burpResponseBase64=req_resp["resp"],
+                                                     )
+                    burp_rr.clean()
+                    burp_rr.save()
+
+            if item.unsaved_request is not None and item.unsaved_response is not None:
+                burp_rr = BurpRawRequestResponse(finding=item,
+                                                 burpRequestBase64=item.unsaved_request,
+                                                 burpResponseBase64=item.unsaved_response,
+                                                 )
+                burp_rr.clean()
+                burp_rr.save()
+
+            for endpoint in item.unsaved_endpoints:
+                ep, created = Endpoint.objects.get_or_create(protocol=endpoint.protocol,
+                                                             host=endpoint.host,
+                                                             path=endpoint.path,
+                                                             query=endpoint.query,
+                                                             fragment=endpoint.fragment,
+                                                             product=t.engagement.product)
+
+                item.endpoints.add(ep)
+
+            finding_count += 1
+
+        messages.add_message(request,
+                             messages.SUCCESS,
+                             scan_type + ' processed, a total of ' + message(finding_count, 'finding',
+                                                                             'processed'),
+                             extra_tags='alert-success')
+        return HttpResponseRedirect(reverse('view_test', args=(t.id,)))
+    except SyntaxError:
+        messages.add_message(request,
+                             messages.ERROR,
+                             'There appears to be an error in the XML report, please check and try again.',
+                             extra_tags='alert-danger')
+
 
 @user_passes_test(lambda u: u.is_staff)
 def import_scan_results(request, eid):
     engagement = get_object_or_404(Engagement, id=eid)
-    finding_count = 0
     form = ImportScanForm()
     if request.method == "POST":
         form = ImportScanForm(request.POST, request.FILES)
         if form.is_valid():
-            file = request.FILES['file']
-            scan_date = form.cleaned_data['scan_date']
-            min_sev = form.cleaned_data['minimum_severity']
-            active = form.cleaned_data['active']
-            verified = form.cleaned_data['verified']
-
-            scan_type = request.POST['scan_type']
-            if not any(scan_type in code for code in ImportScanForm.SCAN_TYPE_CHOICES):
-                raise Http404()
-
-            tt, t_created = Test_Type.objects.get_or_create(name=scan_type)
-            # will save in development environment
-            environment, env_created = Development_Environment.objects.get_or_create(name="Development")
-            t = Test(engagement=engagement, test_type=tt, target_start=scan_date,
-                     target_end=scan_date, environment=environment, percent_complete=100)
-            t.full_clean()
-            t.save()
-            t.tags = form.cleaned_data['tags']
-
-            try:
-                parser = import_parser_factory(file, t)
-            except ValueError:
-                raise Http404()
-
-            try:
-                for item in parser.items:
-                    sev = item.severity
-                    if sev == 'Information' or sev == 'Informational':
-                        sev = 'Info'
-
-                    item.severity = sev
-
-                    if Finding.SEVERITIES[sev] > Finding.SEVERITIES[min_sev]:
-                        continue
-
-                    item.test = t
-                    item.date = t.target_start
-                    item.reporter = request.user
-                    item.last_reviewed = datetime.now(tz=localtz)
-                    item.last_reviewed_by = request.user
-                    item.active = active
-                    item.verified = verified
-                    item.save()
-
-                    if hasattr(item, 'unsaved_req_resp') and len(item.unsaved_req_resp) > 0:
-                        for req_resp in item.unsaved_req_resp:
-                            burp_rr = BurpRawRequestResponse(finding=item,
-                                                             burpRequestBase64=req_resp["req"],
-                                                             burpResponseBase64=req_resp["resp"],
-                                                             )
-                            burp_rr.clean()
-                            burp_rr.save()
-
-                    if item.unsaved_request is not None and item.unsaved_response is not None:
-                        burp_rr = BurpRawRequestResponse(finding=item,
-                                                         burpRequestBase64=item.unsaved_request,
-                                                         burpResponseBase64=item.unsaved_response,
-                                                         )
-                        burp_rr.clean()
-                        burp_rr.save()
-
-                    for endpoint in item.unsaved_endpoints:
-                        ep, created = Endpoint.objects.get_or_create(protocol=endpoint.protocol,
-                                                                     host=endpoint.host,
-                                                                     path=endpoint.path,
-                                                                     query=endpoint.query,
-                                                                     fragment=endpoint.fragment,
-                                                                     product=t.engagement.product)
-
-                        item.endpoints.add(ep)
-
-                    finding_count += 1
-
-                messages.add_message(request,
-                                     messages.SUCCESS,
-                                     scan_type + ' processed, a total of ' + message(finding_count, 'finding',
-                                                                                     'processed'),
-                                     extra_tags='alert-success')
-                return HttpResponseRedirect(reverse('view_test', args=(t.id,)))
-            except SyntaxError:
-                messages.add_message(request,
-                                     messages.ERROR,
-                                     'There appears to be an error in the XML report, please check and try again.',
-                                     extra_tags='alert-danger')
+            dictToPass=form.cleaned_data
+            dictToPass['file']=request.FILES['file']
+            dictToPass['scan_type']=request.POST['scan_type']
+            dictToPass['eid']=eid
+            dictToPass['request']=request
+            import_scan_results_logic(dictToPass)            
     add_breadcrumb(parent=engagement, title="Import Scan Results", top_level=False, request=request)
     return render(request,
                   'dojo/import_scan_results.html',

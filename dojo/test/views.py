@@ -350,6 +350,133 @@ def search(request, tid):
                    })
 
 
+def re_import_scan_results_logic(bundle):
+    t = get_object_or_404(Test, id=tid)
+    scan_type = t.test_type.name
+    engagement = t.engagement
+    scan_date = bundle['scan_date']
+    min_sev = bundle['minimum_severity']
+    request = bundle['request']
+    try:
+        parser = import_parser_factory(file, t)
+    except ValueError:
+        raise Http404()
+
+    try:
+        items = parser.items
+        original_items = t.finding_set.all().values_list("id", flat=True)
+        new_items = []
+        mitigated_count = 0
+        finding_count = 0
+        finding_added_count = 0
+        reactivated_count = 0
+        for item in items:
+            endpoints = item.unsaved_endpoints
+            sev = item.severity
+            if sev == 'Information':
+                sev = 'Info'
+
+            if Finding.SEVERITIES[sev] > Finding.SEVERITIES[min_sev]:
+                continue
+
+            if scan_type == 'Veracode Scan':
+                find = Finding.objects.filter(title=item.title,
+                                              test__id=t.id,
+                                              severity=sev,
+                                              numerical_severity=Finding.get_numerical_severity(sev),
+                                              description=item.description
+                                              )
+            else:
+                find = Finding.objects.filter(title=item.title,
+                                              test__id=t.id,
+                                              severity=sev,
+                                              numerical_severity=Finding.get_numerical_severity(sev),
+                                              )
+
+            if len(find) == 1:
+                if find[0].mitigated:
+                    # it was once fixed, but now back
+                    find[0].mitigated = None
+                    find[0].mitigated_by = None
+                    find[0].active = True
+                    find[0].save()
+                    note = Notes(entry="Re-activated by %s re-upload." % scan_type,
+                                 author=request.user)
+                    note.save()
+                    find[0].notes.add(note)
+                    reactivated_count += 1
+                new_items.append(find[0].id)
+            else:
+                item.test = t
+                item.date = t.target_start
+                item.reporter = request.user
+                item.last_reviewed = datetime.now(tz=localtz)
+                item.last_reviewed_by = request.user
+                item.save()
+                finding_added_count += 1
+                new_items.append(item.id)
+                find = item
+                if item.unsaved_request is not None and item.unsaved_response is not None:
+                    burp_rr = BurpRawRequestResponse(finding=find,
+                                                     burpRequestBase64=item.unsaved_request,
+                                                     burpResponseBase64=item.unsaved_response,
+                                                     )
+                    burp_rr.clean()
+                    burp_rr.save()
+            if find:
+                finding_count += 1
+                for endpoint in item.unsaved_endpoints:
+                    ep, created = Endpoint.objects.get_or_create(protocol=endpoint.protocol,
+                                                                 host=endpoint.host,
+                                                                 path=endpoint.path,
+                                                                 query=endpoint.query,
+                                                                 fragment=endpoint.fragment,
+                                                                 product=t.engagement.product)
+
+        # calculate the difference
+        to_mitigate = set(original_items) - set(new_items)
+        for finding_id in to_mitigate:
+            finding = Finding.objects.get(id=finding_id)
+            finding.mitigated = datetime.combine(scan_date, datetime.now(tz=localtz).time())
+            finding.mitigated_by = request.user
+            finding.active = False
+            finding.save()
+            note = Notes(entry="Mitigated by %s re-upload." % scan_type,
+                         author=request.user)
+            note.save()
+            finding.notes.add(note)
+            mitigated_count += 1
+        messages.add_message(request,
+                             messages.SUCCESS,
+                             '%s processed, a total of ' % scan_type + message(finding_count, 'finding',
+                                                                               'processed'),
+                             extra_tags='alert-success')
+        if finding_added_count > 0:
+            messages.add_message(request,
+                                 messages.SUCCESS,
+                                 'A total of ' + message(finding_added_count, 'finding',
+                                                         'added') + ', that are new to scan.',
+                                 extra_tags='alert-success')
+        if reactivated_count > 0:
+            messages.add_message(request,
+                                 messages.SUCCESS,
+                                 'A total of ' + message(reactivated_count, 'finding',
+                                                         'reactivated') + ', that are back in scan results.',
+                                 extra_tags='alert-success')
+        if mitigated_count > 0:
+            messages.add_message(request,
+                                 messages.SUCCESS,
+                                 'A total of ' + message(mitigated_count, 'finding',
+                                                         'mitigated') + '. Please manually verify each one.',
+                                 extra_tags='alert-success')
+        return HttpResponseRedirect(reverse('view_test', args=(t.id,)))
+    except SyntaxError:
+            messages.add_message(request,
+                                 messages.ERROR,
+                                 'There appears to be an error in the XML report, please check and try again.',
+                                 extra_tags='alert-danger')
+	
+
 @user_passes_test(lambda u: u.is_staff)
 def re_import_scan_results(request, tid):
     additional_message = "When re-uploading a scan, any findings not found in original scan will be updated as " \
@@ -362,129 +489,12 @@ def re_import_scan_results(request, tid):
     if request.method == "POST":
         form = ReImportScanForm(request.POST, request.FILES)
         if form.is_valid():
-            scan_date = form.cleaned_data['scan_date']
-            min_sev = form.cleaned_data['minimum_severity']
-            file = request.FILES['file']
-            scan_type = t.test_type.name
-            try:
-                parser = import_parser_factory(file, t)
-            except ValueError:
-                raise Http404()
-
-            try:
-                items = parser.items
-                original_items = t.finding_set.all().values_list("id", flat=True)
-                new_items = []
-                mitigated_count = 0
-                finding_count = 0
-                finding_added_count = 0
-                reactivated_count = 0
-                for item in items:
-                    endpoints = item.unsaved_endpoints
-                    sev = item.severity
-                    if sev == 'Information':
-                        sev = 'Info'
-
-                    if Finding.SEVERITIES[sev] > Finding.SEVERITIES[min_sev]:
-                        continue
-
-                    if scan_type == 'Veracode Scan':
-                        find = Finding.objects.filter(title=item.title,
-                                                      test__id=t.id,
-                                                      severity=sev,
-                                                      numerical_severity=Finding.get_numerical_severity(sev),
-                                                      description=item.description
-                                                      )
-                    else:
-                        find = Finding.objects.filter(title=item.title,
-                                                      test__id=t.id,
-                                                      severity=sev,
-                                                      numerical_severity=Finding.get_numerical_severity(sev),
-                                                      )
-
-                    if len(find) == 1:
-                        if find[0].mitigated:
-                            # it was once fixed, but now back
-                            find[0].mitigated = None
-                            find[0].mitigated_by = None
-                            find[0].active = True
-                            find[0].save()
-                            note = Notes(entry="Re-activated by %s re-upload." % scan_type,
-                                         author=request.user)
-                            note.save()
-                            find[0].notes.add(note)
-                            reactivated_count += 1
-                        new_items.append(find[0].id)
-                    else:
-                        item.test = t
-                        item.date = t.target_start
-                        item.reporter = request.user
-                        item.last_reviewed = datetime.now(tz=localtz)
-                        item.last_reviewed_by = request.user
-                        item.save()
-                        finding_added_count += 1
-                        new_items.append(item.id)
-                        find = item
-                        if item.unsaved_request is not None and item.unsaved_response is not None:
-                            burp_rr = BurpRawRequestResponse(finding=find,
-                                                             burpRequestBase64=item.unsaved_request,
-                                                             burpResponseBase64=item.unsaved_response,
-                                                             )
-                            burp_rr.clean()
-                            burp_rr.save()
-                    if find:
-                        finding_count += 1
-                        for endpoint in item.unsaved_endpoints:
-                            ep, created = Endpoint.objects.get_or_create(protocol=endpoint.protocol,
-                                                                         host=endpoint.host,
-                                                                         path=endpoint.path,
-                                                                         query=endpoint.query,
-                                                                         fragment=endpoint.fragment,
-                                                                         product=t.engagement.product)
-
-                # calculate the difference
-                to_mitigate = set(original_items) - set(new_items)
-                for finding_id in to_mitigate:
-                    finding = Finding.objects.get(id=finding_id)
-                    finding.mitigated = datetime.combine(scan_date, datetime.now(tz=localtz).time())
-                    finding.mitigated_by = request.user
-                    finding.active = False
-                    finding.save()
-                    note = Notes(entry="Mitigated by %s re-upload." % scan_type,
-                                 author=request.user)
-                    note.save()
-                    finding.notes.add(note)
-                    mitigated_count += 1
-                messages.add_message(request,
-                                     messages.SUCCESS,
-                                     '%s processed, a total of ' % scan_type + message(finding_count, 'finding',
-                                                                                       'processed'),
-                                     extra_tags='alert-success')
-                if finding_added_count > 0:
-                    messages.add_message(request,
-                                         messages.SUCCESS,
-                                         'A total of ' + message(finding_added_count, 'finding',
-                                                                 'added') + ', that are new to scan.',
-                                         extra_tags='alert-success')
-                if reactivated_count > 0:
-                    messages.add_message(request,
-                                         messages.SUCCESS,
-                                         'A total of ' + message(reactivated_count, 'finding',
-                                                                 'reactivated') + ', that are back in scan results.',
-                                         extra_tags='alert-success')
-                if mitigated_count > 0:
-                    messages.add_message(request,
-                                         messages.SUCCESS,
-                                         'A total of ' + message(mitigated_count, 'finding',
-                                                                 'mitigated') + '. Please manually verify each one.',
-                                         extra_tags='alert-success')
-                return HttpResponseRedirect(reverse('view_test', args=(t.id,)))
-            except SyntaxError:
-                messages.add_message(request,
-                                     messages.ERROR,
-                                     'There appears to be an error in the XML report, please check and try again.',
-                                     extra_tags='alert-danger')
-
+            dictToPass=form.cleaned_data
+            dictToPass['file']=request.FILES['file']
+            dictToPass['tid']=tid
+            dictToPass['request']=request
+            dictToPass['user']=request.user#maybe will solve AttributeError: 'dict' object has no attribute 'user'
+            re_import_scan_results(dictToPass)
     add_breadcrumb(parent=t, title="Re-upload a %s" % scan_type, top_level=False, request=request)
     return render(request,
                   'dojo/import_scan_results.html',

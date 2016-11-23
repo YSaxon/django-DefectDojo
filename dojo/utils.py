@@ -4,6 +4,7 @@ import re
 from calendar import monthrange
 from datetime import date, datetime, timedelta
 from math import pi, sqrt
+import distutils.dir_util
 
 import vobject
 from dateutil.relativedelta import relativedelta, MO
@@ -591,6 +592,7 @@ def get_alerts(user):
 
 def handle_uploaded_threat(f, eng):
     name, extension = os.path.splitext(f.name)
+    distutils.dir_util.mkpath(os.path.join(settings.MEDIA_ROOT,'threat'))
     with open(settings.MEDIA_ROOT + '/threat/%s%s' % (eng.id, extension),
               'wb+') as destination:
         for chunk in f.chunks():

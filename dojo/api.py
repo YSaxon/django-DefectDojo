@@ -5,14 +5,16 @@ from tastypie.authorization import Authorization
 from tastypie.authorization import DjangoAuthorization
 from tastypie.constants import ALL, ALL_WITH_RELATIONS
 from tastypie.exceptions import Unauthorized
-from tastypie.resources import ModelResource
+from tastypie.resources import ModelResource,Resource
 from tastypie.serializers import Serializer
 from tastypie.validation import CleanedDataFormValidation
+from tastypie import utils
+#from tastypie.resources import Resource
 
 from dojo.models import Product, Engagement, Test, Finding, \
-    User, ScanSettings, IPScan, Scan, Stub_Finding, Risk_Acceptance
+    User, ScanSettings, IPScan, Scan, Stub_Finding, Risk_Acceptance,FileUpload
 from dojo.forms import ProductForm, EngForm2, TestForm, \
-    ScanSettingsForm, FindingForm, StubFindingForm
+    ScanSettingsForm, FindingForm, StubFindingForm,ImportScanForm
 
 """
     Setup logging for the api
@@ -385,6 +387,86 @@ class TestResource(BaseModelResource):
     def dehydrate(self, bundle):
         bundle.data['test_type'] = bundle.obj.test_type
         return bundle
+
+    
+import base64
+import os
+from tastypie.fields import FileField
+from django.core.files.uploadedfile import SimpleUploadedFile
+import mimetypes
+
+
+class ThreatUploadResource(Resource): #implemented primarily as a simpler exercise in uploading a file
+    print "threatuploadbeforemeta"
+    class Meta:
+        resource_name = 'threat_upload'
+        list_allowed_methods = ['post']
+        detail_allowed_methods = []
+        authentication = DojoApiKeyAuthentication()
+        authorization = DjangoAuthorization()
+    def obj_create(self, bundle, **kwargs):
+        from pprint import pprint
+        pprint (vars(bundle))
+        value = bundle.data['file']
+        id = bundle.data['id']
+        file = SimpleUploadedFile(value["name"], base64.b64decode(value["file"]), getattr(value, "content_type", "application/octet-stream"))
+        from dojo.utils import handle_uploaded_threat
+        handle_uploaded_threat(file,Engagement.objects.get(id=id))
+
+from dojo.forms import ImportScanForm
+from dojo.forms import SEVERITY_CHOICES
+from django.shortcuts import render, get_object_or_404
+from dojo.engagement.views import import_scan_results_logic
+#from dojo.test.views import re_import_scan_results_logic
+class ScanUploadResource(Resource):#MultipartResource,#TODO maybe fix the deserializer for multipart
+    id= fields.IntegerField(attribute="id",help_text="REQUIRED FOR PUT > test id of the scan this is to replace",use_in="detail")#
+    eid= fields.IntegerField(attribute="eid",help_text="REQUIRED FOR POST > id of the engagement this scan is to be added to",null=False,default=8)#,use_in='list')#,blank=False)
+    file = fields.FileField(attribute="file",help_text="REQUIRED FOR ALL > a base64 encoded string of the file to be uploaded")#,blank=False)
+    tags = fields.CharField(attribute="tags",help_text="OPTIONAL IN POST > a list of tags seperated by commas",use_in='list',blank=False)#,default="testtag",blank=True)
+    verified= fields.BooleanField(attribute="verified",help_text="OPTIONAL IN POST > Select if these findings findings have been verified.",blank=True,use_in="list",null=False)
+    active= fields.BooleanField(attribute="active",help_text="OPTIONAL IN POST > Select if these findings are currently active.",blank=True,use_in="list",null=True)
+    scan_date = fields.DateField(attribute="scan_date", help_text="REQUIRED FOR ALL > Scan completion date will be used on all findings.")#,blank=False)#default=dojo.models.get_current_date)
+    scan_type = fields.CharField(attribute="scan_type",help_text="REQUIRED FOR POST > scan type, one of: %s" % ', '.join(['%s (%s)' % (t[0], t[1]) for t in ImportScanForm.SCAN_TYPE_CHOICES]),use_in="list")
+    minimum_severity= fields.CharField(attribute="minimum_severity",help_text="REQUIRED FOR ALL > minimum severity level to upload, one of: %s" % ', '.join(['%s (%s)' % (t[0], t[1]) for t in SEVERITY_CHOICES]))
+    print "scanuploadbeforemeta"
+    class Meta:
+        resource_name = 'scan_upload'
+        list_allowed_methods = ['post']
+        #detail_allowed_methods = ['put']#TODO make obj_update work
+        authentication = DojoApiKeyAuthentication()
+        authorization = DjangoAuthorization()
+        validation=CleanedDataFormValidation(form_class=ImportScanForm) # TODO is this actually doing anything? not clear
+        #always_return_data=True #TODO would be nice to return a reference to the test created
+    def obj_create(self, bundle, **kwargs):
+        dictToPass=bundle.data
+        import pprint; pprint.pprint (dictToPass)
+        pprint.pprint(bundle.request.FILES)
+        if not 'tags' in dictToPass: dictToPass['tags']=""
+        if not 'verified' in dictToPass: dictToPass['verified']=False
+        if not 'active' in dictToPass: dictToPass['active']=True
+        if not 'minimum_severity' in dictToPass: dictToPass['minimum_severity']="Info"
+        if not 'eid' in dictToPass: print "no eid found"#raise Http404()  #TODO fix 404
+        if not 'scan_type' in dictToPass: print "no scan type found"#raise Http404()
+        #if not 'scan_date' in dictToPass:dictToPass['scan_date']= TODO add a default date or something
+        dictToPass['file'] = SimpleUploadedFile("scanfile", base64.b64decode(bundle.data['file']), "application/octet-stream")
+        dictToPass['request']=bundle.request
+        
+        #response=
+        import_scan_results_logic(dictToPass)
+        #bundle['location']=response['location']
+        #return bundle
+        #TODO figure out how to return this, I think I need to return the actual test object
+        
+    def obj_update(self, bundle, **kwargs):#doesn't work, raises an authorization related error
+        dictToPass=bundle.data
+        if not 'minimum_severity' in dictToPass: dictToPass['minimum_severity']="Info"
+        if not 'id' in dictToPass: raise Http404()
+        #if not 'scan_date' in dictToPass:dictToPass['scan_date']=TODO default date
+        dictToPass['file'] = SimpleUploadedFile("scanfile", base64.b64decode(bundle.data['file']), "application/octet-stream")
+        dictToPass['request']=bundle.request
+        re_import_scan_results_logic(dictToPass)
+
+        
 
 
 class RiskAcceptanceResource(BaseModelResource):
