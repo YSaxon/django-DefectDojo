@@ -335,7 +335,7 @@ def import_scan_results(request, eid):
             dictToPass['eid']=eid
             dictToPass['request']=request
             t = import_scan_results_logic(dictToPass)
-            if not t==NONE:
+            if not t==None:
                 return HttpResponseRedirect(reverse('view_test', args=(t.id,)))
     add_breadcrumb(parent=engagement, title="Import Scan Results", top_level=False, request=request)
     return render(request,
