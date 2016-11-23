@@ -314,7 +314,7 @@ def import_scan_results_logic(bundle):
                              scan_type + ' processed, a total of ' + message(finding_count, 'finding',
                                                                              'processed'),
                              extra_tags='alert-success')
-        return HttpResponseRedirect(reverse('view_test', args=(t.id,)))
+        return t
     except SyntaxError:
         messages.add_message(request,
                              messages.ERROR,
@@ -334,7 +334,9 @@ def import_scan_results(request, eid):
             dictToPass['scan_type']=request.POST['scan_type']
             dictToPass['eid']=eid
             dictToPass['request']=request
-            import_scan_results_logic(dictToPass)            
+            t = import_scan_results_logic(dictToPass)
+            if not t==NONE:
+                return HttpResponseRedirect(reverse('view_test', args=(t.id,)))
     add_breadcrumb(parent=engagement, title="Import Scan Results", top_level=False, request=request)
     return render(request,
                   'dojo/import_scan_results.html',
