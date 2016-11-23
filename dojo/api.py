@@ -12,7 +12,7 @@ from tastypie import utils
 #from tastypie.resources import Resource
 
 from dojo.models import Product, Engagement, Test, Finding, \
-    User, ScanSettings, IPScan, Scan, Stub_Finding, Risk_Acceptance,FileUpload
+    User, ScanSettings, IPScan, Scan, Stub_Finding, Risk_Acceptance
 from dojo.forms import ProductForm, EngForm2, TestForm, \
     ScanSettingsForm, FindingForm, StubFindingForm,ImportScanForm
 
