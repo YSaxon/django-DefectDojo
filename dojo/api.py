@@ -432,7 +432,7 @@ class ScanUploadResource(Resource):#MultipartResource,#TODO maybe fix the deseri
     class Meta:
         resource_name = 'scan_upload'
         list_allowed_methods = ['post']
-        #detail_allowed_methods = ['put']#TODO make obj_update work
+        detail_allowed_methods = ['put']#TODO make obj_update work
         authentication = DojoApiKeyAuthentication()
         authorization = DjangoAuthorization()
         validation=CleanedDataFormValidation(form_class=ImportScanForm) # TODO is this actually doing anything? not clear
@@ -452,7 +452,8 @@ class ScanUploadResource(Resource):#MultipartResource,#TODO maybe fix the deseri
         dictToPass['request']=bundle.request
         
         #response=
-        import_scan_results_logic(dictToPass)
+        t = import_scan_results_logic(dictToPass)
+        return t
         #bundle['location']=response['location']
         #return bundle
         #TODO figure out how to return this, I think I need to return the actual test object
