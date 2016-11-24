@@ -450,14 +450,21 @@ class ScanUploadResource(Resource):#MultipartResource,#TODO maybe fix the deseri
         #if not 'scan_date' in dictToPass:dictToPass['scan_date']= TODO add a default date or something
         dictToPass['file'] = SimpleUploadedFile("scanfile", base64.b64decode(bundle.data['file']), "application/octet-stream")
         dictToPass['request']=bundle.request
-        
-        #response=
         t = import_scan_results_logic(dictToPass)
-        return t
-        #bundle['location']=response['location']
-        #return bundle
-        #TODO figure out how to return this, I think I need to return the actual test object
+        bundle.data['test']=t
+        return bundle
+
         
+    def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
+        if bundle_or_obj is not None:
+            if 'test' in bundle_or_obj.data:
+                tr = TestResource()
+                t = bundle_or_obj.data['test']
+                return tr.get_resource_uri(t)
+        #otherwise just return the default
+        return super(ScanUploadResource,self).get_resource_uri(bundle_or_obj, url_name)#TODO not sure this actually works
+        
+    
     def obj_update(self, bundle, **kwargs):#doesn't work, raises an authorization related error
         dictToPass=bundle.data
         if not 'minimum_severity' in dictToPass: dictToPass['minimum_severity']="Info"
