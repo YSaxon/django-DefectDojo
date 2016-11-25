@@ -437,6 +437,8 @@ class ScanUploadResource(Resource):#MultipartResource,#TODO maybe fix the deseri
         authorization = DjangoAuthorization()
         validation=CleanedDataFormValidation(form_class=ImportScanForm) # TODO is this actually doing anything? not clear
         #always_return_data=True #TODO would be nice to return a reference to the test created
+        #include_resource_uri = True
+        #queryset = Test.objects.all()
     def obj_create(self, bundle, **kwargs):
         dictToPass=bundle.data
         import pprint; pprint.pprint (dictToPass)
