@@ -27,7 +27,9 @@ from dojo.forms import NoteForm, CloseFindingForm, FindingForm, PromoteFindingFo
 from dojo.models import Product_Type, Finding, Notes, \
     Risk_Acceptance, BurpRawRequestResponse, Stub_Finding, Endpoint, Finding_Template, FindingImage, \
     FindingImageAccessToken
+from dojo.models import User
 from dojo.utils import get_page_items, add_breadcrumb, FileIterWrapper
+from dojo.utils import process_notifications
 
 localtz = timezone(settings.TIME_ZONE)
 
@@ -161,6 +163,9 @@ def view_finding(request, fid):
                                  messages.SUCCESS,
                                  'Note saved.',
                                  extra_tags='alert-success')
+            url = request.build_absolute_uri(reverse("view_finding", args=(finding.id,)))
+            title= "Finding: "+ finding.title
+            process_notifications(request, new_note, url, title)
     else:
         form = NoteForm()
 
