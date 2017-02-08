@@ -7,7 +7,7 @@ from dojo import views
 from dojo.ajax import StubFindingResource as ajax_stub_finding_resource
 from dojo.api import UserResource, ProductResource, EngagementResource, \
     TestResource, FindingResource, ScanSettingsResource, ScanResource, StubFindingResource, \
-	ThreatUploadResource, ScanUploadResource, FindingTemplateResource, ImportScanResource
+	ThreatUploadResource, ScanUploadResource, ImportScanResource#, FindingTemplateResource
 from dojo.development_environment.urls import urlpatterns as dev_env_urls
 from dojo.endpoint.urls import urlpatterns as endpoint_urls
 from dojo.engagement.urls import urlpatterns as eng_urls

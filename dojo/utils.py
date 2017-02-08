@@ -478,6 +478,25 @@ def get_alerts(user):
     alerts = []
     now = localtz.localize(datetime.today())
     start = now - timedelta(days=7)
+    
+    atmentions=Notes.objects.filter(date__range=[start, now],
+    entry__icontains='@'+user.username)
+    print atmentions
+    for note in atmentions:
+        finding=Finding.objects.filter(notes=note).first()
+        test=Test.objects.filter(notes=note).first()
+        if finding:
+            url=reverse('view_finding', args=(finding.id,))
+            title=finding.title
+        elif test:
+            url=reverse('view_test', args=(test.id,))
+            title="Test %s on %s" % (test.test_type.name, test.engagement.product.name)
+        print finding
+        alerts.append(['You were mentioned by {} in a note on {}'.format(note.author,title),
+                       'Posted ' + note.date.strftime("%b. %d, %Y"),
+                       'file-text-o',
+                       url])
+    
     # reports requested in the last 7 days
     completed_reports = Report.objects.filter(requester=user, datetime__range=[start, now], status='success')
     running_reports = Report.objects.filter(requester=user, datetime__range=[start, now], status='requested')

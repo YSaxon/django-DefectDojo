@@ -12,7 +12,7 @@ from pytz import timezone
 from tastypie.models import ApiKey
 
 from dojo.filters import UserFilter
-from dojo.forms import DojoUserForm, AddDojoUserForm, DeleteUserForm, APIKeyForm
+from dojo.forms import DojoUserForm, AddDojoUserForm, DeleteUserForm, APIKeyForm, EditDojoUserForm
 from dojo.models import Product, Dojo_User
 from dojo.utils import get_page_items, add_breadcrumb, get_alerts
 
@@ -153,8 +153,8 @@ def add_user(request):
         if form.is_valid():
             user = form.save(commit=False)
             user.set_unusable_password()
-            user.is_staff = False
-            user.is_superuser = False
+            #user.is_staff = False
+            #user.is_superuser = False
             user.active = True
             user.save()
             if 'authorized_products' in form.cleaned_data and len(form.cleaned_data['authorized_products']) > 0:
@@ -182,7 +182,7 @@ def add_user(request):
 def edit_user(request, uid):
     user = get_object_or_404(Dojo_User, id=uid)
     authed_products = Product.objects.filter(authorized_users__in=[user])
-    form = AddDojoUserForm(instance=user, initial={'authorized_products': authed_products})
+    form = EditDojoUserForm(instance=user, initial={'authorized_products': authed_products})
 
     if request.method == 'POST':
         form = AddDojoUserForm(request.POST, instance=user, initial={'authorized_products': authed_products})

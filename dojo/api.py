@@ -21,7 +21,7 @@ from django.conf import settings
 
 from dojo.models import Product, Engagement, Test, Finding, \
     User, ScanSettings, IPScan, Scan, Stub_Finding, Risk_Acceptance, \
-    Finding_Template, Test_Type, Development_Environment, \
+    Finding_Template, Test_Type, Development_Environment
 from dojo.tools.factory import import_parser_factory
 
 from datetime import datetime
@@ -267,7 +267,7 @@ class UserResource(BaseModelResource):
         fields = ['id', 'username', 'first_name', 'last_name', 'last_login']
 
         list_allowed_methods = ['get']
-        detail_allowed_methods = ['get']
+        detail_allowed_methods = ['get','delete']
         include_resource_uri = True
         filtering = {
             'id': ALL,

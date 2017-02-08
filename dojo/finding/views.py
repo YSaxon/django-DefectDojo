@@ -17,6 +17,7 @@ from django.http import HttpResponseRedirect, HttpResponseForbidden
 from django.http import StreamingHttpResponse
 from django.shortcuts import render, get_object_or_404
 from django.utils.safestring import mark_safe
+
 from pytz import timezone
 
 from dojo.filters import OpenFindingFilter, \
@@ -135,7 +136,8 @@ def closed_findings(request):
                    "filtered": findings,
                    "title_words": title_words,
                    })
-
+                     
+        
 
 def view_finding(request, fid):
     finding = get_object_or_404(Finding, id=fid)
