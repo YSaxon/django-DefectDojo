@@ -475,27 +475,66 @@ def get_page_items(request, items, page_size, param_name='page'):
 def get_alerts(user):
     import humanize
 
+
+    print "\n\nget_alerts"
+    
     alerts = []
     now = localtz.localize(datetime.today())
     start = now - timedelta(days=7)
     
     atmentions=Notes.objects.filter(date__range=[start, now],
     entry__icontains='@'+user.username)
-    print atmentions
-    for note in atmentions:
-        finding=Finding.objects.filter(notes=note).first()
-        test=Test.objects.filter(notes=note).first()
-        if finding:
-            url=reverse('view_finding', args=(finding.id,))
-            title=finding.title
-        elif test:
-            url=reverse('view_test', args=(test.id,))
-            title="Test %s on %s" % (test.test_type.name, test.engagement.product.name)
-        print finding
-        alerts.append(['You were mentioned by {} in a note on {}'.format(note.author,title),
-                       'Posted ' + note.date.strftime("%b. %d, %Y"),
+    
+    
+    findings_with_atmention=set([Finding.objects.get(notes=note)
+                    for note in atmentions if Finding.objects.filter(notes=note).exists()])
+    for f in findings_with_atmention:
+        f_notes=list(f.notes.all())
+        latest_mention=[n for n in f_notes if n in atmentions][0]#notes are listed with the latest posted first
+        #print latest_mention
+        
+        #print f_notes
+        index_latest_mention=f_notes.index(latest_mention)
+        #print index_latest_mention
+        later_notes_than_mention=f_notes[:index_latest_mention]
+        #print later_notes_than_mention
+        #print "^^^\n"
+        if not any(n.author==user for n in later_notes_than_mention):
+            alerts.append(['You were mentioned in notes on Finding:{}'.format(f.title),
+                           'Posted ' + latest_mention.date.strftime("%b. %d, %Y"),#needs work
+                           'file-text-o',
+                           reverse('view_finding', args=(f.id,))])
+               
+    tests_with_atmention=set([Test.objects.get(notes=note)
+                    for note in atmentions if Test.objects.filter(notes=note).exists()])
+    for t in tests_with_atmention:
+        latest_mention=[n for n in t.notes.all() if n in atmentions][0]
+        t_notes=list(t.notes.all())
+        index_latest_mention=t_notes.index(latest_mention)
+        later_notes_than_mention=t_notes[:index_latest_mention]
+        if not any(n.author==user for n in later_notes_than_mention):
+            alerts.append(['You were mentioned in notes on Test: %s on %s' % (t.test_type.name, t.engagement.product.name),
+                       'Posted ' + latest_mention.date.strftime("%b. %d, %Y"),
                        'file-text-o',
-                       url])
+                       reverse('view_test', args=(t.id,))])
+        
+    
+    
+    #for note in atmentions:
+    #    finding=Finding.objects.filter(notes=note).first()
+    #    test=Test.objects.filter(notes=note).first()
+    #    if finding:
+    #        url=reverse('view_finding', args=(finding.id,))
+    #        title=finding.title
+    #    elif test:
+    #        url=reverse('view_test', args=(test.id,))
+    #        title="Test %s on %s" % (test.test_type.name, test.engagement.product.name)
+    #    #print finding
+    #    alerts.append(['You were mentioned by {} in a note on {}'.format(note.author,title),
+    #                   'Posted ' + note.date.strftime("%b. %d, %Y"),
+    #                   'file-text-o',
+    #                   url])
+    
     
     # reports requested in the last 7 days
     completed_reports = Report.objects.filter(requester=user, datetime__range=[start, now], status='success')
